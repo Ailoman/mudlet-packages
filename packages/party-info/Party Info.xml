@@ -1,0 +1,1002 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+	<TriggerPackage>
+		<TriggerGroup isActive="yes" isFolder="yes">
+			<name>Party Info</name>
+			<script></script>
+			<command></command>
+			<packageName>Party Info</packageName>
+			<regex></regex>
+			<Trigger isActive="yes" isFolder="no">
+				<name>party vitals gag</name>
+				<script>-- Gag the party-channel vitals line and route it to the grid.
+-- matches[2]=name  matches[3]=HP:[..]..EP payload.  Buff 'reports' lines
+-- are NOT matched, so they stay in main.
+if partyinfo and partyinfo.onVitalsLine then
+  partyinfo.onVitalsLine(matches[2], matches[3])
+end
+deleteLine()</script>
+				<triggerType>1</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName></packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList>
+					<string>^\s*&lt;party&gt;:?\s+(\w+)\s+&gt;&gt;\s+(HP:\[.*)$</string>
+				</regexCodeList>
+				<regexCodePropertyList>
+					<integer>1</integer>
+				</regexCodePropertyList>
+			</Trigger>
+			<Trigger isActive="yes" isFolder="no">
+				<name>party reports gag</name>
+				<script>-- Gag the party-channel buff 'reports' lines (spell announcements).
+deleteLine()</script>
+				<triggerType>1</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName></packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList>
+					<string>^\s*&lt;party&gt;:?\s+\w+\s+reports\s+'</string>
+				</regexCodeList>
+				<regexCodePropertyList>
+					<integer>1</integer>
+				</regexCodePropertyList>
+			</Trigger>
+			<Trigger isActive="yes" isFolder="no">
+				<name>party position</name>
+				<script>if partyinfo and partyinfo.onPosition then
+  partyinfo.onPosition(matches[2], matches[3], matches[4])
+end</script>
+				<triggerType>1</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName></packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList>
+					<string>^(\w+) (?:steps|moves) to (?:position )?(\d),(\d)</string>
+				</regexCodeList>
+				<regexCodePropertyList>
+					<integer>1</integer>
+				</regexCodePropertyList>
+			</Trigger>
+			<Trigger isActive="yes" isFolder="no">
+				<name>party position swap</name>
+				<script>-- Dual-swap line: "Name moves to R,C and Name moves to R,C"
+if partyinfo and partyinfo.onPosition then
+  partyinfo.onPosition(matches[2], matches[3], matches[4])
+  partyinfo.onPosition(matches[5], matches[6], matches[7])
+end</script>
+				<triggerType>1</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName></packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList>
+					<string>^(\w+) moves to (\d),(\d) and (\w+) moves to (\d),(\d)</string>
+				</regexCodeList>
+				<regexCodePropertyList>
+					<integer>1</integer>
+				</regexCodePropertyList>
+			</Trigger>
+			<Trigger isActive="yes" isFolder="no">
+				<name>party guided</name>
+				<script>if partyinfo and partyinfo.onPosition then
+  partyinfo.onPosition(matches[2], matches[3], matches[4])
+end</script>
+				<triggerType>1</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName></packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList>
+					<string>^\w+ guides (\w+) to position (\d),(\d)</string>
+				</regexCodeList>
+				<regexCodePropertyList>
+					<integer>1</integer>
+				</regexCodePropertyList>
+			</Trigger>
+			<Trigger isActive="yes" isFolder="no">
+				<name>party ps row</name>
+				<script>if partyinfo and partyinfo.onStatusRow then
+  partyinfo.onStatusRow(matches[2], matches[3], matches[4],
+    matches[5], matches[6], matches[7], matches[8], matches[9])
+end</script>
+				<triggerType>1</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName></packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList>
+					<string>^\|\s+(\w+)\s+(\d),(\d)\s+(Fol|Lea)\s+(\w)\s+Hp:\s*(\d+)%\s+Sp:\s*(\d+)%\s+Ep:\s*(\d+)%</string>
+				</regexCodeList>
+				<regexCodePropertyList>
+					<integer>1</integer>
+				</regexCodePropertyList>
+			</Trigger>
+			<Trigger isActive="yes" isFolder="no">
+				<name>party ps name</name>
+				<script>if partyinfo and partyinfo.onPartyName then
+  partyinfo.onPartyName(matches[2])
+end</script>
+				<triggerType>1</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName></packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList>
+					<string>^\|\s+Partyname:\s+(\S+)</string>
+				</regexCodeList>
+				<regexCodePropertyList>
+					<integer>1</integer>
+				</regexCodePropertyList>
+			</Trigger>
+			<Trigger isActive="yes" isFolder="no">
+				<name>party member left</name>
+				<script>if partyinfo and partyinfo.onLeft then
+  partyinfo.onLeft(matches[2])
+end</script>
+				<triggerType>1</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName></packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList>
+					<string>^(\w+) has left the party\.</string>
+				</regexCodeList>
+				<regexCodePropertyList>
+					<integer>1</integer>
+				</regexCodePropertyList>
+			</Trigger>
+			<Trigger isActive="yes" isFolder="no">
+				<name>party unform</name>
+				<script>if partyinfo and partyinfo.onUnform then
+  partyinfo.onUnform(matches[2])
+end</script>
+				<triggerType>1</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName></packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList>
+					<string>^(\w+) stops following the leader\.</string>
+				</regexCodeList>
+				<regexCodePropertyList>
+					<integer>1</integer>
+				</regexCodePropertyList>
+			</Trigger>
+			<TriggerGroup isActive="yes" isFolder="yes">
+				<name>leave events (hide panel)</name>
+				<script></script>
+				<command></command>
+				<packageName></packageName>
+				<regex></regex>
+			<Trigger isActive="yes" isFolder="no">
+				<name>self leave</name>
+				<script>-- YOU are no longer in a party -&gt; hide the whole panel.
+if partyinfo and partyinfo.onSelfLeave then
+  partyinfo.onSelfLeave()
+end</script>
+				<triggerType>1</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName></packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList>
+					<string>^You leave the party\.</string>
+				</regexCodeList>
+				<regexCodePropertyList>
+					<integer>1</integer>
+				</regexCodePropertyList>
+			</Trigger>
+			<Trigger isActive="yes" isFolder="no">
+				<name>self kicked</name>
+				<script>-- YOU are no longer in a party -&gt; hide the whole panel.
+if partyinfo and partyinfo.onSelfLeave then
+  partyinfo.onSelfLeave()
+end</script>
+				<triggerType>1</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName></packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList>
+					<string>^You have been kicked out from party\.</string>
+				</regexCodeList>
+				<regexCodePropertyList>
+					<integer>1</integer>
+				</regexCodePropertyList>
+			</Trigger>
+			<Trigger isActive="yes" isFolder="no">
+				<name>party disbanded</name>
+				<script>-- YOU are no longer in a party -&gt; hide the whole panel.
+if partyinfo and partyinfo.onSelfLeave then
+  partyinfo.onSelfLeave()
+end</script>
+				<triggerType>1</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName></packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList>
+					<string>^The party has been disbanded\.</string>
+				</regexCodeList>
+				<regexCodePropertyList>
+					<integer>1</integer>
+				</regexCodePropertyList>
+			</Trigger>
+			</TriggerGroup>
+			<Trigger isActive="yes" isFolder="no">
+				<name>party formed</name>
+				<script>-- You created a party — show the panel and set the name.
+if partyinfo and partyinfo.onPartyName then
+  partyinfo.onPartyName(matches[2])
+end</script>
+				<triggerType>1</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName></packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList>
+					<string>^You form a party called (\S+)\.</string>
+				</regexCodeList>
+				<regexCodePropertyList>
+					<integer>1</integer>
+				</regexCodePropertyList>
+			</Trigger>
+		</TriggerGroup>
+	</TriggerPackage>
+	<TimerPackage />
+	<AliasPackage>
+		<AliasGroup isActive="yes" isFolder="yes">
+			<name>Party Info</name>
+			<script></script>
+			<command></command>
+			<packageName>Party Info</packageName>
+			<regex></regex>
+			<Alias isActive="yes" isFolder="no">
+				<name>party clear</name>
+				<script>partyinfo.clear()</script>
+				<command></command>
+				<packageName></packageName>
+				<regex>^party clear$</regex>
+			</Alias>
+			<Alias isActive="yes" isFolder="no">
+				<name>party width</name>
+				<script>partyinfo.setWidth(matches[2])</script>
+				<command></command>
+				<packageName></packageName>
+				<regex>^party width (\d+)$</regex>
+			</Alias>
+			<Alias isActive="yes" isFolder="no">
+				<name>party height</name>
+				<script>partyinfo.setHeight(matches[2])</script>
+				<command></command>
+				<packageName></packageName>
+				<regex>^party height (\d+)$</regex>
+			</Alias>
+		</AliasGroup>
+	</AliasPackage>
+	<ActionPackage />
+	<ScriptPackage>
+		<ScriptGroup isActive="yes" isFolder="yes">
+			<name>Party Info</name>
+			<packageName>Party Info</packageName>
+			<script></script>
+			<eventHandlerList />
+			<Script isActive="yes" isFolder="no">
+				<name>partyinfo.core</name>
+				<packageName></packageName>
+				<script>-- Party Info — party formation HUD for Icesus.
+-- v2.0  •  companion to icesus.core + Elemental Bonds.
+--
+-- Gags the party-channel vitals firehose from the main console and renders
+-- each member as a compact HP / SP / EP block placed in a fixed 3x3 grid
+-- that mirrors Icesus party formation positions (1,1 .. 3,3).
+--
+-- The panel is ALWAYS shown and never auto-hides — an earlier auto-hide
+-- made neighbouring windows jump when the panel appeared/disappeared.
+-- Empty formation cells render as faint placeholders so the layout is
+-- rock-steady regardless of party size.
+--
+-- Position data comes from two sources, both parsed here:
+--   1. Live formation messages (steps/moves/guides to position R,C).
+--   2. The `ps` party-status table (authoritative; also carries Fol/Lea
+--      + the O/C/D column and per-member Hp/Sp/Ep).
+-- Continuous vitals come from the gagged &lt;party&gt; feed (SP only, no PSP).
+
+partyinfo = partyinfo or {}
+partyinfo.version = "2.3"
+
+-- Hot-reload teardown of a previous instance.
+if type(partyinfo.teardown) == "function" then pcall(partyinfo.teardown) end
+
+-- =============================================================
+-- Config.
+-- =============================================================
+partyinfo.config = {
+  width      = 330,   -- panel width (px); `party width N` overrides
+  panelH     = 180,   -- panel HEIGHT (px). The panel floats as a top-level
+                      -- overlay: its top aligns with the banner (y=0) and
+                      -- the rest sits OVER the top-right of the main console,
+                      -- so the console keeps its full height. `party height N`.
+  cellGap    = 3,     -- px between grid cells
+  headerH    = 16,    -- px for the "PARTY  name" header strip
+  forgetSecs = 120,   -- drop a member after this long with no update AND
+                      -- no known position (covers silent disconnects)
+}
+-- Grid is 3 rows (positions 1,. 2,. 3,.) x 3 cols (positions .,1 .,2 .,3).
+partyinfo.ROWS = 3
+partyinfo.COLS = 3
+
+-- Reuse icesus palette when present; fall back to literals otherwise.
+local IP = (type(icesus) == "table" and icesus.palette) or {}
+partyinfo.palette = {
+  bgMain     = IP.bgMain     or "#131629",
+  bgPanel    = IP.bgPanel    or "#1a1e35",
+  bgInput    = IP.bgInput    or "#0f1225",
+  border     = IP.border     or "#2a2f4e",
+  borderBright = IP.borderBright or "#3a3f5e",
+  text       = IP.text       or "#c8cdd8",
+  textDim    = IP.textDim    or "#8b90a5",
+  textBright = IP.textBright or "#eef0f6",
+  ice        = IP.ice        or "#7dd3fc",
+  iceBright  = IP.iceBright  or "#bae6fd",
+  amber      = IP.amber      or "#fbbf24",
+  hpA = "#8b1a1a", hpB = "#dc2626",   -- HP gradient (low → high colour)
+  spA = "#1e3a8a", spB = "#3b82f6",   -- SP gradient
+  epA = "#7c5314", epB = "#b45309",   -- EP gradient
+}
+
+partyinfo.fontStack =
+  (type(icesus) == "table" and icesus.fontStack)
+  or '"JetBrains Mono", "DejaVu Sans Mono", "Courier New", monospace'
+
+-- =============================================================
+-- State.
+--   members[name] = { hp, sp, ep, row, col, role, fronttag, last }
+--     row/col = formation position (1..3) or nil if unknown.
+--     role    = "Lea" | "Fol" | nil ;  fronttag = "O"|"C"|"D"|nil.
+-- =============================================================
+partyinfo.state = partyinfo.state or {
+  members   = {},
+  partyName = "",
+  inParty   = false,   -- drives panel visibility; set true by any party
+                       -- data, cleared by leave/disband/kick events.
+}
+partyinfo.hud   = nil
+partyinfo.cells = {}    -- cells[r][c] = { bg, nameLbl, hp, sp, ep }
+partyinfo.aliases = {}
+partyinfo.timers  = {}
+
+-- =============================================================
+-- Helpers.
+-- =============================================================
+local function htmlEscape(s)
+  return (tostring(s or ""):gsub("[&lt;&gt;&amp;]",
+    { ["&lt;"] = "&amp;lt;", ["&gt;"] = "&amp;gt;", ["&amp;"] = "&amp;amp;" }))
+end
+
+-- Vertical glassy gradient (top brighter → bottom darker).
+local function lgv(top, bot)
+  return string.format(
+    "qlineargradient(x1:0, y1:0, x2:0, y2:1, " ..
+    "stop:0 %s, stop:0.45 %s, stop:1 %s)", top, top, bot)
+end
+
+-- Map a member's row,col to grid indices. Icesus positions are row,col:
+-- "1,1" = front-left. Front row (row 1) is drawn at the TOP of the grid.
+local function cellFor(m)
+  if not m or not m.row or not m.col then return nil end
+  local r = tonumber(m.row); local c = tonumber(m.col)
+  if not r or not c or r &lt; 1 or r &gt; partyinfo.ROWS or c &lt; 1 or c &gt; partyinfo.COLS then
+    return nil
+  end
+  return r, c
+end
+
+-- Right-edge offset + width so the panel tucks against the LEFT edge of
+-- the Elemental Bonds buff bar (between that bar and the icesus banner).
+local function anchor()
+  local W = tonumber(partyinfo.config.width) or 330
+  if W &lt; 80 then W = 80 end
+  local ebW = 0
+  if type(bond) == "table" and bond.ui and bond.ui.WIDTH then
+    ebW = tonumber(bond.ui.WIDTH) or 0
+  end
+  -- Geyser.Container does not support "-N" right-anchoring string constraints
+  -- (only Label/MiniConsole do). Compute an absolute left-edge pixel instead:
+  --   x = windowWidth - ebW - W
+  -- so the panel's right edge touches the EB bar's left edge.
+  local mw = 1920
+  pcall(function() if getMainWindowSize then mw = getMainWindowSize() or mw end end)
+  local absX = mw - ebW - W
+  return absX, W
+end
+
+-- Move the already-built panel to the correct absolute x using the LIVE
+-- window size. Called on every show so a stale build-time measurement never
+-- causes the panel to appear in the wrong place.
+function partyinfo.reposition()
+  if not partyinfo.hud or not partyinfo.hud.panel then return end
+  local absX, W = anchor()
+  pcall(function() partyinfo.hud.panel:move(absX, 0) end)
+end
+
+-- Shrink the icesus banner so its right edge meets OUR left edge, clearing
+-- both this panel and the EB bar. Reversible on teardown.
+function partyinfo.fitBanner(restore)
+  local banner = icesus and icesus.hud and icesus.hud.banner
+  if not banner then return end
+  if restore then
+    if type(bond) == "table" and bond.ui and bond.ui.fitBanner then
+      pcall(function() bond.ui.fitBanner() end)
+    else
+      pcall(function() banner:resize("100%", nil) end)
+    end
+    return
+  end
+  local W = tonumber(partyinfo.config.width) or 330
+  local ebW = 0
+  if type(bond) == "table" and bond.ui and bond.ui.WIDTH then
+    ebW = tonumber(bond.ui.WIDTH) or 0
+  end
+  pcall(function() banner:resize("100%-" .. (W + ebW + 1), nil) end)
+end
+
+-- Push (or restore) icesus.hud.right so it starts below our panel instead
+-- of being overlapped by it. We only move it when panelH exceeds the
+-- existing borderTop (92 px) — EB already owns that strip.
+-- restore=true returns the right column to its icesus.core defaults.
+function partyinfo.fitRightColumn(restore)
+  local right = icesus and icesus.hud and icesus.hud.right
+  if not right then return end
+  local T = (icesus and icesus.config and icesus.config.borderTop) or 92
+  local B = (icesus and icesus.config and icesus.config.borderBottom) or 64
+  if restore then
+    -- Return right column to its icesus defaults: y=T, height=100%-(T+B)
+    pcall(function()
+      right:move(nil, T)
+      right:resize(nil, "100%-" .. (T + B))
+    end)
+    return
+  end
+  local PH = tonumber(partyinfo.config.panelH) or 180
+  if PH &lt;= T then return end   -- panel fits inside existing banner strip, nothing to do
+  -- Move the right column down to start below our panel, shrink its height to match.
+  pcall(function()
+    right:move(nil, PH)
+    right:resize(nil, "100%-" .. (PH + B))
+  end)
+end
+
+-- =============================================================
+-- HUD construction — a fixed 3x3 grid of cells, built once.
+-- =============================================================
+function partyinfo.setupHUD()
+  if partyinfo.hud then return end
+  local P = partyinfo.palette
+  local C = partyinfo.config
+
+  local top = 92
+  pcall(function() if getBorderTop then top = getBorderTop() end end)
+  if not top or top &lt; 1 then top = 92 end
+
+  local x, W = anchor()
+  -- Panel height: a fixed overlay that floats DOWN over the console. We
+  -- clamp it to at least the banner height so it never sits above it, and
+  -- the surplus below borderTop overlaps the console's top-right corner.
+  local PH = tonumber(C.panelH) or 180
+  if PH &lt; top then PH = top end
+
+  partyinfo.hud = {}
+  -- Top-level overlay (parent omitted): the "-N" x anchor pins it to the
+  -- right side over the console, NOT inside the reserved top border, so the
+  -- console keeps its full height and we float on top of it.
+  partyinfo.hud.panel = Geyser.Container:new({
+    name = "partyinfo.panel",
+    x = x, y = 0, width = W, height = PH,
+  })
+  partyinfo.hud.bg = Geyser.Label:new({
+    name = "partyinfo.bg",
+    x = 0, y = 0, width = "100%", height = "100%",
+  }, partyinfo.hud.panel)
+  partyinfo.hud.bg:setStyleSheet(string.format([[
+    background: %s;
+    border: 1px solid %s;
+    border-radius: 4px;
+  ]], P.bgMain, P.border))
+
+  partyinfo.hud.header = Geyser.Label:new({
+    name = "partyinfo.header",
+    x = 5, y = 2, width = "100%-10", height = C.headerH,
+  }, partyinfo.hud.panel)
+  partyinfo.hud.header:setStyleSheet(string.format([[
+    background: transparent;
+    color: %s;
+    font-family: %s;
+    font-size: 9pt;
+    font-weight: 700;
+    qproperty-alignment: 'AlignLeft | AlignVCenter';
+  ]], P.ice, partyinfo.fontStack))
+  pcall(function() partyinfo.hud.header:setFontSize(8) end)
+  partyinfo.hud.header:echo("PARTY")
+
+  -- Cell geometry — driven by the panel's own height (PH), so the cells
+  -- grow as the overlay extends down over the console.
+  local gridTop = C.headerH + 4
+  local gridH   = PH - gridTop - 2
+  local gap     = C.cellGap
+  local innerW  = (W - 2) - gap * (partyinfo.COLS + 1)
+  local cellW   = math.floor(innerW / partyinfo.COLS)
+  local cellH   = math.floor((gridH - gap * (partyinfo.ROWS - 1)) / partyinfo.ROWS)
+
+  partyinfo.cells = {}
+  for r = 1, partyinfo.ROWS do
+    partyinfo.cells[r] = {}
+    for c = 1, partyinfo.COLS do
+      local cx = gap + (c - 1) * (cellW + gap)
+      local cy = gridTop + (r - 1) * (cellH + gap)
+      partyinfo.cells[r][c] = partyinfo.makeCell(r, c, cx, cy, cellW, cellH)
+    end
+  end
+
+  partyinfo.fitBanner()
+  partyinfo.redraw()
+end
+
+-- Build one grid cell: backdrop label + name label + three thin gauges.
+function partyinfo.makeCell(r, c, x, y, w, h)
+  local P = partyinfo.palette
+  local cell = { r = r, c = c, x = x, y = y, w = w, h = h }
+  local tag = r .. "_" .. c
+
+  cell.bg = Geyser.Label:new({
+    name = "partyinfo.cellbg." .. tag,
+    x = x, y = y, width = w, height = h,
+  }, partyinfo.hud.panel)
+
+  local pad = 3
+  cell.nameLbl = Geyser.Label:new({
+    name = "partyinfo.cellname." .. tag,
+    x = x + pad, y = y + 2, width = w - pad * 2, height = 12,
+  }, partyinfo.hud.panel)
+  cell.nameLbl:setStyleSheet(string.format([[
+    background: transparent;
+    color: %s;
+    font-family: %s;
+    font-size: 8pt;
+    font-weight: 600;
+    qproperty-alignment: 'AlignLeft | AlignVCenter';
+  ]], P.textBright, partyinfo.fontStack))
+  pcall(function() cell.nameLbl:setFontSize(8) end)
+
+  local barH = 7
+  local barY0 = y + 14
+  local function bar(key, idx, gradA, gradB)
+    local gg = Geyser.Gauge:new({
+      name = "partyinfo." .. key .. "." .. tag,
+      x = x + pad, y = barY0 + idx * (barH + 1),
+      width = w - pad * 2, height = barH,
+    }, partyinfo.hud.panel)
+    gg.front:setStyleSheet(string.format([[
+      background: %s;
+      border: 1px solid rgba(0,0,0,0.45);
+      border-radius: 2px;
+    ]], lgv(gradB, gradA)))
+    gg.back:setStyleSheet(string.format([[
+      background: %s;
+      border: 1px solid %s;
+      border-radius: 2px;
+    ]], P.bgInput, P.border))
+    gg.text:setStyleSheet(string.format([[
+      color: %s;
+      font-family: %s;
+      font-size: 7pt;
+      qproperty-alignment: 'AlignCenter';
+    ]], P.textBright, partyinfo.fontStack))
+    pcall(function() gg.text:setFontSize(7) end)
+    gg:setValue(0, 1, "")
+    return gg
+  end
+  cell.hp = bar("hp", 0, P.hpA, P.hpB)
+  cell.sp = bar("sp", 1, P.spA, P.spB)
+  cell.ep = bar("ep", 2, P.epA, P.epB)
+  return cell
+end
+
+-- =============================================================
+-- Draw — paint every cell from current state. Empty cells become faint
+-- placeholders; always full 3x3 so nothing shifts. Leader cell gets an
+-- ice-tinted border + star.
+-- =============================================================
+function partyinfo.redraw()
+  if not partyinfo.hud then return end
+  local P = partyinfo.palette
+
+  local occupant = {}
+  for name, m in pairs(partyinfo.state.members) do
+    local r, c = cellFor(m)
+    if r then occupant[r .. "," .. c] = name end
+  end
+
+  local count = 0
+  for _ in pairs(partyinfo.state.members) do count = count + 1 end
+  local nm = partyinfo.state.partyName
+  partyinfo.hud.header:echo(string.format(
+    [[&lt;span style="color:%s;font-weight:700"&gt;PARTY&lt;/span&gt;]] ..
+    [[&lt;span style="color:%s"&gt;%s%s&lt;/span&gt;]],
+    P.ice, P.textDim,
+    (nm ~= "" and ("  " .. htmlEscape(nm)) or ""),
+    count &gt; 0 and ("  ·  " .. count) or ""))
+
+  for r = 1, partyinfo.ROWS do
+    for c = 1, partyinfo.COLS do
+      local cell = partyinfo.cells[r][c]
+      local name = occupant[r .. "," .. c]
+      if name then
+        local m = partyinfo.state.members[name]
+        local isLeader = (m.role == "Lea")
+        local bd = isLeader and P.iceBright or P.borderBright
+        cell.bg:setStyleSheet(string.format([[
+          background: %s;
+          border: 1px solid %s;
+          border-radius: 3px;
+        ]], P.bgPanel, bd))
+        local star = isLeader and
+          string.format([[&lt;span style="color:%s"&gt; ★&lt;/span&gt;]], P.amber) or ""
+        local tag = (m.fronttag and m.fronttag ~= "") and
+          string.format([[&lt;span style="color:%s"&gt; %s&lt;/span&gt;]],
+            P.textDim, htmlEscape(m.fronttag)) or ""
+        cell.nameLbl:echo(string.format(
+          [[&lt;span style="color:%s"&gt;%s&lt;/span&gt;%s%s]],
+          P.textBright, htmlEscape(name), star, tag))
+        cell.nameLbl:show()
+        local function setG(g, pct, label)
+          local p = math.min(math.max(tonumber(pct) or 0, 0), 100)
+          g:setValue(p, 100, string.format("%s %d%%", label, p))
+          g:show()
+        end
+        setG(cell.hp, m.hp, "H")
+        setG(cell.sp, m.sp, "S")
+        setG(cell.ep, m.ep, "E")
+      else
+        cell.bg:setStyleSheet(string.format([[
+          background: rgba(255,255,255,0.015);
+          border: 1px dashed %s;
+          border-radius: 3px;
+        ]], P.border))
+        cell.nameLbl:echo(string.format(
+          [[&lt;span style="color:#3a3f5e;font-size:7pt"&gt;%d,%d&lt;/span&gt;]], r, c))
+        cell.hp:setValue(0, 1, ""); cell.hp:hide()
+        cell.sp:setValue(0, 1, ""); cell.sp:hide()
+        cell.ep:setValue(0, 1, ""); cell.ep:hide()
+      end
+    end
+  end
+end
+
+-- =============================================================
+-- Party membership → panel visibility.
+--   enterParty(): any party data proves we're in a party → show panel.
+--   exitParty():  a leave/disband/kick event → clear state, hide panel.
+-- The panel widget always exists; we only toggle its visibility, so the
+-- show/hide is a real state transition (joined/left), not transient data.
+-- =============================================================
+function partyinfo.enterParty()
+  if partyinfo.state.inParty then return end
+  partyinfo.state.inParty = true
+  partyinfo.reposition()         -- snap to live window size before showing
+  if partyinfo.hud and partyinfo.hud.panel then
+    partyinfo.hud.panel:show()
+  end
+  partyinfo.fitBanner()          -- reclaim banner room for the panel
+  partyinfo.fitRightColumn()     -- push right column below our panel
+end
+
+function partyinfo.exitParty()
+  partyinfo.state.inParty = false
+  partyinfo.state.members = {}
+  partyinfo.state.partyName = ""
+  if partyinfo.hud and partyinfo.hud.panel then
+    partyinfo.hud.panel:hide()
+  end
+  partyinfo.fitBanner(true)      -- give the banner its full width back
+  partyinfo.fitRightColumn(true) -- restore right column to icesus defaults
+  partyinfo.redraw()
+end
+
+-- =============================================================
+-- Ingest: continuous vitals from the gagged &lt;party&gt; feed.
+-- =============================================================
+function partyinfo.onVitalsLine(name, payload)
+  if not name or name == "" then return end
+  partyinfo.enterParty()
+  payload = tostring(payload or "")
+  local hp = payload:match("HP:%[[^%]]*%]%s*(%d+)%%")
+  local sp = payload:match("SP:%[[^%]]*%]%s*(%d+)%%")
+  local ep = payload:match("EP:%[[^%]]*%]%s*(%d+)%%")
+
+  local m = partyinfo.state.members[name]
+  if not m then
+    m = { hp = 0, sp = 0, ep = 0 }
+    partyinfo.state.members[name] = m
+  end
+  if hp then m.hp = tonumber(hp) end
+  if sp then m.sp = tonumber(sp) end
+  if ep then m.ep = tonumber(ep) end
+  m.last = os.time()
+  partyinfo.redraw()
+end
+
+-- =============================================================
+-- Ingest: formation position from a live message. Captured Name is always
+-- the one being POSITIONED (works for steps/moves/guides forms).
+-- =============================================================
+function partyinfo.onPosition(name, row, col)
+  if not name or name == "" then return end
+  partyinfo.enterParty()
+  local m = partyinfo.state.members[name]
+  if not m then
+    m = { hp = 0, sp = 0, ep = 0 }
+    partyinfo.state.members[name] = m
+  end
+  m.row = tonumber(row)
+  m.col = tonumber(col)
+  m.last = os.time()
+  partyinfo.redraw()
+end
+
+-- =============================================================
+-- Ingest: a row of the `ps` table (authoritative position + role + vitals).
+-- =============================================================
+function partyinfo.onStatusRow(name, row, col, role, fronttag, hp, sp, ep)
+  if not name or name == "" then return end
+  partyinfo.enterParty()
+  local m = partyinfo.state.members[name]
+  if not m then
+    m = { hp = 0, sp = 0, ep = 0 }
+    partyinfo.state.members[name] = m
+  end
+  m.row = tonumber(row)
+  m.col = tonumber(col)
+  m.role = role
+  m.fronttag = fronttag
+  if hp then m.hp = tonumber(hp) end
+  if sp then m.sp = tonumber(sp) end
+  if ep then m.ep = tonumber(ep) end
+  m.last = os.time()
+  partyinfo.redraw()
+end
+
+function partyinfo.onPartyName(nm)
+  partyinfo.enterParty()
+  partyinfo.state.partyName = tostring(nm or "")
+  partyinfo.redraw()
+end
+
+-- =============================================================
+-- Ingest: leaving / unforming.
+--
+-- onSelfLeave():  YOU left, were kicked, or the party disbanded → the
+--   whole panel goes away. Wire every "you're no longer in a party" line
+--   to this (see the trigger group). Currently wired:
+--     "You leave the party."
+--   Stubs to add as you find the exact text (Icesus wording may vary):
+--     - kicked:    "&lt;Leader&gt; kicks you out of the party."  / "You have been
+--                   kicked from the party."
+--     - disbanded: "The party has been disbanded."         / "&lt;Leader&gt;
+--                   disbands the party."
+--   All of them should just call partyinfo.onSelfLeave() — no args needed.
+--
+-- onLeft(name):   ANOTHER member left → remove just them from the grid.
+--   If that empties the party (only happens if you were somehow the last
+--   tracked member) the panel stays until an explicit self-leave.
+-- =============================================================
+function partyinfo.onSelfLeave()
+  partyinfo.exitParty()
+  cecho("\n&lt;grey&gt;[party] left party — panel hidden.&lt;reset&gt;\n")
+end
+
+function partyinfo.onLeft(name)
+  if not name then return end
+  partyinfo.state.members[name] = nil
+  partyinfo.redraw()
+end
+
+function partyinfo.onUnform(name)
+  if not name then return end
+  local m = partyinfo.state.members[name]
+  if m then m.row = nil; m.col = nil; partyinfo.redraw() end
+end
+
+-- Drop members silent (no vitals, no position) for a long time.
+function partyinfo.pruneStale()
+  local now = os.time()
+  local cutoff = tonumber(partyinfo.config.forgetSecs) or 120
+  local changed = false
+  for name, m in pairs(partyinfo.state.members) do
+    if (not m.row) and (now - (m.last or 0)) &gt; cutoff then
+      partyinfo.state.members[name] = nil
+      changed = true
+    end
+  end
+  if changed then partyinfo.redraw() end
+end
+
+-- =============================================================
+-- Commands.
+-- =============================================================
+function partyinfo.clear()
+  partyinfo.state.members = {}
+  partyinfo.redraw()
+  cecho("\n&lt;cyan&gt;[party]&lt;reset&gt; tracked members cleared.\n")
+end
+
+function partyinfo.setWidth(n)
+  local w = tonumber(n)
+  if not w or w &lt; 80 then
+    cecho("\n&lt;yellow&gt;[party]&lt;reset&gt; Usage: party width &lt;pixels&gt;  (e.g. party width 360)\n")
+    cecho("&lt;grey&gt;[party] current width: " .. tostring(partyinfo.config.width) .. "&lt;reset&gt;\n")
+    return
+  end
+  partyinfo.config.width = math.floor(w)
+  partyinfo.teardownHUD()
+  partyinfo.setupHUD()
+  cecho("\n&lt;cyan&gt;[party]&lt;reset&gt; panel width set to &lt;yellow&gt;" .. partyinfo.config.width .. "&lt;reset&gt; px.\n")
+end
+
+function partyinfo.setHeight(n)
+  local h = tonumber(n)
+  if not h or h &lt; 60 then
+    cecho("\n&lt;yellow&gt;[party]&lt;reset&gt; Usage: party height &lt;pixels&gt;  (e.g. party height 220)\n")
+    cecho("&lt;grey&gt;[party] current height: " .. tostring(partyinfo.config.panelH) .. "&lt;reset&gt;\n")
+    return
+  end
+  partyinfo.config.panelH = math.floor(h)
+  partyinfo.teardownHUD()
+  partyinfo.setupHUD()
+  if partyinfo.state and partyinfo.state.inParty then
+    partyinfo.hud.panel:show()
+    partyinfo.fitRightColumn()
+  end
+  cecho("\n&lt;cyan&gt;[party]&lt;reset&gt; panel height set to &lt;yellow&gt;" .. partyinfo.config.panelH .. "&lt;reset&gt; px.\n")
+end
+
+-- =============================================================
+-- Teardown.
+-- =============================================================
+function partyinfo.teardownHUD()
+  if not partyinfo.hud then return end
+  for r = 1, partyinfo.ROWS do
+    if partyinfo.cells[r] then
+      for c = 1, partyinfo.COLS do
+        local cell = partyinfo.cells[r][c]
+        if cell then
+          for _, w in pairs(cell) do
+            if type(w) == "table" and type(w.hide) == "function" then
+              pcall(function() w:hide() end)
+            end
+          end
+        end
+      end
+    end
+  end
+  partyinfo.cells = {}
+  for _, w in pairs(partyinfo.hud) do
+    if w and type(w.hide) == "function" then pcall(function() w:hide() end) end
+  end
+  partyinfo.hud = nil
+  partyinfo.fitBanner(true)
+  partyinfo.fitRightColumn(true)
+end
+
+function partyinfo.uninstall()
+  for _, t in pairs(partyinfo.timers) do if t then pcall(killTimer, t) end end
+  partyinfo.timers = {}
+  if partyinfo.aliases then
+    for _, a in pairs(partyinfo.aliases) do pcall(killAlias, a) end
+    partyinfo.aliases = {}
+  end
+  partyinfo.teardownHUD()
+end
+
+partyinfo.teardown = partyinfo.uninstall
+
+-- =============================================================
+-- Install. Panel is built hidden and only appears once party data proves
+-- we're in a party (any vitals / ps row / formation msg / party name).
+-- =============================================================
+function partyinfo.install()
+  local wasInParty = partyinfo.state and partyinfo.state.inParty
+  partyinfo.uninstall()
+  partyinfo.setupHUD()
+  -- Default hidden. If we were already in a party before a hot-reload,
+  -- keep showing so editing the script mid-session doesn't blank the panel.
+  if wasInParty then
+    partyinfo.state.inParty = true
+    partyinfo.reposition()       -- snap to live window size on hot-reload
+    partyinfo.hud.panel:show()
+    partyinfo.fitRightColumn()   -- push right column below panel on hot-reload
+  else
+    partyinfo.state.inParty = false
+    partyinfo.hud.panel:hide()
+    partyinfo.fitBanner(true)    -- don't reserve banner room while hidden
+    partyinfo.fitRightColumn(true) -- ensure right column is at icesus defaults
+  end
+
+  partyinfo.aliases.clear = tempAlias("^party clear$",       function() partyinfo.clear() end)
+  partyinfo.aliases.width = tempAlias("^party width (%d+)$", function() partyinfo.setWidth(matches[2]) end)
+  partyinfo.aliases.height = tempAlias("^party height (%d+)$", function() partyinfo.setHeight(matches[2]) end)
+
+  partyinfo.timers.prune = tempTimer(20, function() partyinfo.pruneStale() end, true)
+
+  cecho("\n&lt;cyan&gt;Party Info&lt;reset&gt; v" .. partyinfo.version ..
+    " ready. &lt;grey&gt;Panel appears when you join a party.&lt;reset&gt;\n")
+end
+
+partyinfo.install()
+</script>
+				<eventHandlerList>
+					<string>sysLoadEvent</string>
+					<string>sysInstall</string>
+				</eventHandlerList>
+			</Script>
+		</ScriptGroup>
+	</ScriptPackage>
+	<KeyPackage />
+</MudletPackage>

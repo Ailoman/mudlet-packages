@@ -1,0 +1,17 @@
+# Built packages
+*.mpackage
+*.zip
+
+# Mudlet runtime data
+*.map.dat
+*.idmap.lua
+*.settings.lua
+*.nicks.lua
+*.links.lua
+*.danger.lua
+*.packages.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

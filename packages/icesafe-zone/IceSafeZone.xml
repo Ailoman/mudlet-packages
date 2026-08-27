@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+	<TriggerPackage />
+	<AliasPackage>
+		<AliasGroup isActive="yes" isFolder="yes">
+			<name>Icesus Safe Zone</name>
+			<script></script>
+			<command></command>
+			<packageName>IceSafeZone</packageName>
+			<regex></regex>
+			<Alias isActive="yes" isFolder="no">
+				<name>safezone commands</name>
+				<script>local cmd = matches[2]
+if cmd == "list" then
+  safezone.listZones()
+elseif cmd == "items" then
+  safezone.listItems()
+elseif cmd == "status" then
+  safezone.status()
+elseif cmd == "addroom" then
+  safezone.addRoom(nil)
+elseif cmd:sub(1, 8) == "addroom " then
+  safezone.addRoom(cmd:sub(9))
+elseif cmd == "rmroom" then
+  safezone.removeRoom()
+elseif cmd:sub(1, 8) == "addzone " then
+  safezone.addZone(cmd:sub(9))
+elseif cmd:sub(1, 7) == "rmzone " then
+  safezone.removeZone(cmd:sub(8))
+elseif cmd:sub(1, 8) == "additem " then
+  safezone.addItem(cmd:sub(9))
+elseif cmd:sub(1, 7) == "rmitem " then
+  safezone.removeItem(cmd:sub(8))
+end</script>
+				<command></command>
+				<packageName></packageName>
+				<regex>^sz (list|items|status|addroom|addroom .+|rmroom|addzone .+|rmzone .+|additem .+|rmitem .+)$</regex>
+			</Alias>
+		</AliasGroup>
+	</AliasPackage>
+	<ScriptPackage>
+		<ScriptGroup isActive="yes" isFolder="yes">
+			<name>Icesus Safe Zone</name>
+			<packageName>IceSafeZone</packageName>
+			<script></script>
+			<eventHandlerList />
+			<Script isActive="yes" isFolder="no">
+				<name>IceSafeZone</name>
+				<packageName></packageName>
+				<script>-- ============================================================
+-- Icesus Safe Zone Manager
+-- ============================================================
+-- Removes forbidden items when you enter a "safe" location and
+-- re-equips them when you leave.
+--
+-- A location counts as safe if EITHER:
+--   * its area is in safezone.config.zones  (whole-area safe), OR
+--   * its room hash is in safezone.config.rooms (single-room safe)
+--
+-- Single rooms are keyed by gmcp.Room.Info.id (the unique room hash the
+-- mapper also uses), so marking one room safe does NOT mark the rest of
+-- its area. A room can be made safe even inside a non-safe area.
+--
+-- Detection uses the gmcp.Room.Info event.
+--
+-- Commands:
+--   sz list             — list safe areas AND safe rooms
+--   sz items            — list forbidden items
+--   sz status           — show current location + safe state
+--   sz addzone &lt;name&gt;   — add a whole-area safe zone
+--   sz rmzone &lt;name&gt;    — remove a safe zone
+--   sz addroom [label]  — mark the CURRENT room safe (optional label)
+--   sz rmroom           — un-mark the CURRENT room
+--   sz additem &lt;name&gt;   — add a forbidden item
+--   sz rmitem &lt;name&gt;    — remove a forbidden item
+-- ============================================================
+
+safezone = safezone or {}
+
+-- ---- Configuration ---------------------------------------------------
+
+safezone.config = safezone.config or {}
+
+-- Whole-area safe zones (exact area name, case-insensitive).
+safezone.config.zones = safezone.config.zones or {
+  ["city of vaerlon"]          = true,
+  ["vaerlon shops"]            = true,
+  ["mages of valkor"]          = true,
+  ["army of vaerlon guild"]    = true,
+  ["city-state of atherton"]   = true,
+  ["snowfall"]                 = true,
+  ["vaerlon"]                  = true,
+}
+
+-- Single safe rooms, keyed by room hash. Value is a small table holding a
+-- human-friendly label (room name when marked) for display.
+-- { ["&lt;hash&gt;"] = { label = "Some Room (City of X)" } }
+safezone.config.rooms = safezone.config.rooms or {}
+
+-- Items forbidden in safe locations.
+-- Format: { name = "display name", remove_cmd = "remove X", wear_cmd = "wear X" }
+safezone.config.items = safezone.config.items or {
+  {
+    name        = "Pendant of Violence",
+    remove_cmd  = "remove pendant of violence",
+    wear_cmd    = "wear pendant of violence",
+  },
+}
+
+-- ---- Runtime state ---------------------------------------------------
+
+safezone.state = safezone.state or {
+  inSafe        = false,    -- are we currently in a safe location?
+  currentArea   = "",       -- last known area name
+  currentRoom   = "",       -- last known room hash
+  currentName   = "",       -- last known room name
+  removedItems  = {},       -- items we removed; re-equip on exit
+}
+
+-- ---- Helpers ---------------------------------------------------------
+
+local function szNote(msg)
+  cecho("\n&lt;cyan&gt;[safezone]&lt;reset&gt; " .. msg .. "\n")
+end
+
+-- A location is safe if the area is a safe zone OR the room is a safe room.
+local function isSafe(area, roomHash)
+  if area and area ~= "" and safezone.config.zones[area:lower()] then
+    return true, "area"
+  end
+  if roomHash and roomHash ~= "" and safezone.config.rooms[roomHash] then
+    return true, "room"
+  end
+  return false, nil
+end
+
+-- ---- Core logic ------------------------------------------------------
+
+-- Remove forbidden items on entering a safe location.
+function safezone.onEnterSafe(why, label)
+  szNote(string.format("Entering safe %s: &lt;yellow&gt;%s&lt;reset&gt;", why, label))
+  safezone.state.removedItems = {}
+
+  -- Small delay so the room description finishes printing first.
+  tempTimer(0.3, function()
+    for _, item in ipairs(safezone.config.items) do
+      local nameWords = item.name:lower():gsub("[^%a%s]", ""):match("(%a+)") or "item"
+      local triggered = false
+      tempRegexTrigger(
+        "(?i)you (?:stop wearing|remove|take off).*" .. nameWords,
+        function()
+          if not triggered then
+            triggered = true
+            table.insert(safezone.state.removedItems, item)
+            szNote(string.format(
+              "&lt;green&gt;Removed&lt;reset&gt; %s — will re-equip on exit.", item.name))
+          end
+        end, 1)
+      send(item.remove_cmd, false)
+    end
+  end)
+end
+
+-- Re-equip on leaving a safe location.
+function safezone.onExitSafe(toLabel)
+  if #safezone.state.removedItems == 0 then return end
+  szNote(string.format(
+    "Leaving safe location → &lt;yellow&gt;%s&lt;reset&gt;. Re-equipping…", toLabel))
+
+  local delay = 0.4
+  for _, item in ipairs(safezone.state.removedItems) do
+    local cmd, name = item.wear_cmd, item.name
+    tempTimer(delay, function()
+      send(cmd, false)
+      szNote(string.format("&lt;green&gt;Re-equipped&lt;reset&gt; %s.", name))
+    end)
+    delay = delay + 0.3
+  end
+  safezone.state.removedItems = {}
+end
+
+-- ---- GMCP Room.Info handler ------------------------------------------
+
+function safezone.onRoomInfo()
+  local r = gmcp.Room and gmcp.Room.Info
+  if not r then return end
+
+  local area = r.area and tostring(r.area) or ""
+  local hash = r.id   and tostring(r.id)   or ""
+  local name = r.name and tostring(r.name) or ""
+
+  local wasSafe = safezone.state.inSafe
+  local nowSafe, why = isSafe(area, hash)
+
+  safezone.state.currentArea = area
+  safezone.state.currentRoom = hash
+  safezone.state.currentName = name
+  safezone.state.inSafe      = nowSafe
+
+  if not wasSafe and nowSafe then
+    local label = (why == "room") and (name ~= "" and name or "this room") or area
+    safezone.onEnterSafe(why, label)
+  elseif wasSafe and not nowSafe then
+    safezone.onExitSafe(area ~= "" and area or (name ~= "" and name or "elsewhere"))
+  end
+end
+
+-- ---- Management commands --------------------------------------------
+
+function safezone.listZones()
+  local names = {}
+  for k in pairs(safezone.config.zones) do names[#names+1] = k end
+  table.sort(names)
+  cecho("\n&lt;cyan&gt;[safezone]&lt;reset&gt; &lt;white&gt;Safe areas:&lt;reset&gt;\n")
+  if #names == 0 then cecho("  (none)\n") else
+    for _, n in ipairs(names) do cecho(string.format("  &lt;yellow&gt;%s&lt;reset&gt;\n", n)) end
+  end
+
+  local rooms = {}
+  for hash, info in pairs(safezone.config.rooms) do
+    rooms[#rooms+1] = { hash = hash, label = info.label or "(unnamed)" }
+  end
+  table.sort(rooms, function(a, b) return a.label &lt; b.label end)
+  cecho("&lt;cyan&gt;[safezone]&lt;reset&gt; &lt;white&gt;Safe rooms:&lt;reset&gt;\n")
+  if #rooms == 0 then cecho("  (none)\n") else
+    for _, rm in ipairs(rooms) do
+      cecho(string.format("  &lt;yellow&gt;%s&lt;reset&gt;  &lt;grey&gt;[%s]&lt;reset&gt;\n", rm.label, rm.hash))
+    end
+  end
+end
+
+function safezone.listItems()
+  cecho("\n&lt;cyan&gt;[safezone]&lt;reset&gt; &lt;white&gt;Forbidden items:&lt;reset&gt;\n")
+  if #safezone.config.items == 0 then cecho("  (none)\n") else
+    for i, item in ipairs(safezone.config.items) do
+      cecho(string.format(
+        "  %d. &lt;yellow&gt;%s&lt;reset&gt;  remove: &lt;grey&gt;%s&lt;reset&gt;  wear: &lt;grey&gt;%s&lt;reset&gt;\n",
+        i, item.name, item.remove_cmd, item.wear_cmd))
+    end
+  end
+end
+
+function safezone.status()
+  local s = safezone.state
+  local _, why = isSafe(s.currentArea, s.currentRoom)
+  cecho("\n&lt;cyan&gt;[safezone]&lt;reset&gt; &lt;white&gt;Status:&lt;reset&gt;\n")
+  cecho(string.format("  Current area : &lt;yellow&gt;%s&lt;reset&gt;\n",
+    s.currentArea ~= "" and s.currentArea or "(unknown)"))
+  cecho(string.format("  Current room : &lt;yellow&gt;%s&lt;reset&gt;  &lt;grey&gt;[%s]&lt;reset&gt;\n",
+    s.currentName ~= "" and s.currentName or "(unknown)",
+    s.currentRoom ~= "" and s.currentRoom or "no hash"))
+  cecho(string.format("  Safe here    : %s%s\n",
+    s.inSafe and "&lt;green&gt;yes&lt;reset&gt;" or "&lt;red&gt;no&lt;reset&gt;",
+    s.inSafe and string.format(" &lt;grey&gt;(via %s)&lt;reset&gt;", why or "?") or ""))
+  if #s.removedItems &gt; 0 then
+    cecho("  Held for re-equip:\n")
+    for _, item in ipairs(s.removedItems) do
+      cecho(string.format("    - &lt;yellow&gt;%s&lt;reset&gt;\n", item.name))
+    end
+  end
+end
+
+function safezone.addZone(name)
+  local key = name:lower():match("^%s*(.-)%s*$")
+  if key == "" then szNote("Usage: sz addzone &lt;area name&gt;"); return end
+  safezone.config.zones[key] = true
+  szNote(string.format("Added safe area: &lt;yellow&gt;%s&lt;reset&gt;", key))
+end
+
+function safezone.removeZone(name)
+  local key = name:lower():match("^%s*(.-)%s*$")
+  if safezone.config.zones[key] then
+    safezone.config.zones[key] = nil
+    szNote(string.format("Removed safe area: &lt;yellow&gt;%s&lt;reset&gt;", key))
+  else
+    szNote(string.format("Area not found: &lt;yellow&gt;%s&lt;reset&gt;", key))
+  end
+end
+
+-- Mark the CURRENT room (by its hash) safe, without affecting its area.
+function safezone.addRoom(label)
+  local hash = safezone.state.currentRoom
+  if not hash or hash == "" then
+    szNote("&lt;red&gt;Can't mark this room: no room id yet.&lt;reset&gt; Move once, then retry.")
+    return
+  end
+  label = (label and label:match("^%s*(.-)%s*$")) or ""
+  if label == "" then
+    local nm = safezone.state.currentName
+    local ar = safezone.state.currentArea
+    if nm ~= "" and ar ~= "" then label = string.format("%s (%s)", nm, ar)
+    elseif nm ~= "" then label = nm
+    else label = "Room " .. hash end
+  end
+  safezone.config.rooms[hash] = { label = label }
+  szNote(string.format("Marked safe room: &lt;yellow&gt;%s&lt;reset&gt;  &lt;grey&gt;[%s]&lt;reset&gt;", label, hash))
+  -- If we're standing in it and weren't safe before, trigger removal now.
+  if not safezone.state.inSafe then
+    safezone.state.inSafe = true
+    safezone.onEnterSafe("room", label)
+  end
+end
+
+-- Un-mark the CURRENT room.
+function safezone.removeRoom()
+  local hash = safezone.state.currentRoom
+  if not hash or hash == "" then
+    szNote("&lt;red&gt;No current room id.&lt;reset&gt;")
+    return
+  end
+  if safezone.config.rooms[hash] then
+    local label = safezone.config.rooms[hash].label or hash
+    safezone.config.rooms[hash] = nil
+    szNote(string.format("Un-marked safe room: &lt;yellow&gt;%s&lt;reset&gt;", label))
+    -- If this room was the only reason we're safe, re-equip on the spot.
+    local stillSafe = isSafe(safezone.state.currentArea, hash)
+    if not stillSafe and safezone.state.inSafe then
+      safezone.state.inSafe = false
+      safezone.onExitSafe(safezone.state.currentArea ~= "" and safezone.state.currentArea or "here")
+    end
+  else
+    szNote("This room is not marked safe.")
+  end
+end
+
+function safezone.addItem(name)
+  local n = name:match("^%s*(.-)%s*$")
+  if n == "" then szNote("Usage: sz additem &lt;item name&gt;"); return end
+  table.insert(safezone.config.items, {
+    name       = n,
+    remove_cmd = "remove " .. n:lower(),
+    wear_cmd   = "wear " .. n:lower(),
+  })
+  szNote(string.format("Added forbidden item: &lt;yellow&gt;%s&lt;reset&gt;", n))
+end
+
+function safezone.removeItem(name)
+  local key = name:lower():match("^%s*(.-)%s*$")
+  for i, item in ipairs(safezone.config.items) do
+    if item.name:lower() == key then
+      table.remove(safezone.config.items, i)
+      szNote(string.format("Removed forbidden item: &lt;yellow&gt;%s&lt;reset&gt;", item.name))
+      return
+    end
+  end
+  szNote(string.format("Item not found: &lt;yellow&gt;%s&lt;reset&gt;", key))
+end
+
+-- ---- Bootstrap -------------------------------------------------------
+-- Named to match the Script so its declared sysLoadEvent / sysInstall
+-- handlers run it on install and on every profile load. Also called once
+-- at parse time as a fallback.
+function IceSafeZone()
+  if safezone._roomHandler then
+    killAnonymousEventHandler(safezone._roomHandler)
+  end
+  safezone._roomHandler = registerAnonymousEventHandler(
+    "gmcp.Room.Info", "safezone.onRoomInfo")
+
+  local zn = 0; for _ in pairs(safezone.config.zones) do zn = zn + 1 end
+  local rn = 0; for _ in pairs(safezone.config.rooms) do rn = rn + 1 end
+  cecho(string.format(
+    "\n&lt;cyan&gt;[safezone loaded]&lt;reset&gt; %d item(s), %d area(s), %d room(s). " ..
+    "Type &lt;white&gt;sz status&lt;reset&gt; | &lt;white&gt;sz list&lt;reset&gt; | &lt;white&gt;sz addroom&lt;reset&gt;.\n",
+    #safezone.config.items, zn, rn))
+end
+
+-- Run now (covers live-parse installs).
+IceSafeZone()
+</script>
+				<eventHandlerList>
+					<string>sysLoadEvent</string>
+					<string>sysInstall</string>
+				</eventHandlerList>
+			</Script>
+		</ScriptGroup>
+	</ScriptPackage>
+	<KeyPackage />
+	<HelpPackage>
+		<HelpEntry packageName="IceSafeZone">
+SAFE ZONE MANAGER — IceSafeZone
+================================
+
+Removes forbidden items when you enter a safe location and re-equips
+them when you leave. A location is safe if its AREA is a safe zone, or
+if the specific ROOM has been marked safe.
+
+COMMANDS
+--------
+  sz list               List safe areas and safe rooms
+  sz items              List forbidden items
+  sz status             Show current area/room and safe state
+  sz addzone &lt;name&gt;     Add a whole-area safe zone
+  sz rmzone &lt;name&gt;      Remove a safe zone
+  sz addroom [label]    Mark the CURRENT room safe (rest of area unaffected)
+  sz rmroom             Un-mark the CURRENT room
+  sz additem &lt;name&gt;     Add a forbidden item (uses "remove X" / "wear X")
+  sz rmitem &lt;name&gt;      Remove a forbidden item
+
+SINGLE SAFE ROOMS
+-----------------
+"sz addroom" marks only the room you are standing in, keyed by its unique
+room id (the same hash the mapper uses). The rest of that room's area stays
+non-safe. Stand in the room, then type "sz addroom" (optionally with a
+label, e.g. "sz addroom Bank vault"). Marking a room you are currently in
+removes forbidden items immediately; "sz rmroom" re-equips them if that
+room was the only reason you were safe.
+
+DEFAULT ZONES
+-------------
+  City of Vaerlon, Vaerlon Shops, Mages of Valkor, Army of Vaerlon Guild,
+  City-State of Atherton, Snowfall, Vaerlon
+
+DEFAULT FORBIDDEN ITEMS
+-----------------------
+  Pendant of Violence
+
+NOTES
+-----
+- Area / room detection uses gmcp.Room.Info (area + id fields).
+- Removal is attempted after a short delay so the room description prints
+  first; a confirmed removal is queued for re-equipping on exit.
+- If you were not wearing an item, the MUD's "you aren't wearing that"
+  message is harmless.
+</HelpEntry>
+	</HelpPackage>
+</MudletPackage>

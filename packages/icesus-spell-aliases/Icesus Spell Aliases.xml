@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+	<TriggerPackage />
+	<TimerPackage />
+	<AliasPackage>
+		<AliasGroup isActive="yes" isFolder="yes">
+			<name>Icesus Spell Aliases</name>
+			<script></script>
+			<command></command>
+			<packageName></packageName>
+			<regex></regex>
+			<Alias isActive="yes" isFolder="no">
+				<name>av - avatar of the gods</name>
+				<script>send("cast avatar of the gods on direkein " .. matches[2])</script>
+				<command></command>
+				<packageName></packageName>
+				<regex>^av ?(.*)$</regex>
+			</Alias>
+			<Alias isActive="yes" isFolder="no">
+				<name>cb - chromatic barrier</name>
+				<script>send("cast chromatic barrier at direkein " .. matches[2])</script>
+				<command></command>
+				<packageName></packageName>
+				<regex>^cb ?(.*)$</regex>
+			</Alias>
+			<Alias isActive="yes" isFolder="no">
+				<name>esoe - elemental shield of earth</name>
+				<script>send("cast elemental shield of earth " .. matches[2])</script>
+				<command></command>
+				<packageName></packageName>
+				<regex>^esoe ?(.*)$</regex>
+			</Alias>
+			<Alias isActive="yes" isFolder="no">
+				<name>msa - martyr shield of air</name>
+				<script>send("cast martyr shield of air at direkein " .. matches[2])</script>
+				<command></command>
+				<packageName></packageName>
+				<regex>^msa ?(.*)$</regex>
+			</Alias>
+			<Alias isActive="yes" isFolder="no">
+				<name>sof - shield of faith</name>
+				<script>send("cast shield of faith on direkein " .. matches[2])</script>
+				<command></command>
+				<packageName></packageName>
+				<regex>^sof ?(.*)$</regex>
+			</Alias>
+		</AliasGroup>
+	</AliasPackage>
+	<ActionPackage />
+	<ScriptPackage />
+	<KeyPackage />
+	<HelpPackage />
+	<VariablePackage />
+</MudletPackage>

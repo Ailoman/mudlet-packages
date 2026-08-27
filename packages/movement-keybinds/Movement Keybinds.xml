@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+	<TriggerPackage />
+	<TimerPackage />
+	<AliasPackage />
+	<ActionPackage />
+	<ScriptPackage />
+	<KeyPackage>
+		<Key isActive="yes" isFolder="no">
+			<name>North</name>
+			<packageName />
+			<script>if igoto and igoto.dirCmd then igoto.dirCmd("n") else send("n") end</script>
+			<command />
+			<keyCode>56</keyCode>
+			<keyModifier>536870912</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Northeast</name>
+			<packageName />
+			<script>if igoto and igoto.dirCmd then igoto.dirCmd("ne") else send("ne") end</script>
+			<command />
+			<keyCode>57</keyCode>
+			<keyModifier>536870912</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>East</name>
+			<packageName />
+			<script>if igoto and igoto.dirCmd then igoto.dirCmd("e") else send("e") end</script>
+			<command />
+			<keyCode>54</keyCode>
+			<keyModifier>536870912</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Southeast</name>
+			<packageName />
+			<script>if igoto and igoto.dirCmd then igoto.dirCmd("se") else send("se") end</script>
+			<command />
+			<keyCode>51</keyCode>
+			<keyModifier>536870912</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>South</name>
+			<packageName />
+			<script>if igoto and igoto.dirCmd then igoto.dirCmd("s") else send("s") end</script>
+			<command />
+			<keyCode>50</keyCode>
+			<keyModifier>536870912</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Southwest</name>
+			<packageName />
+			<script>if igoto and igoto.dirCmd then igoto.dirCmd("sw") else send("sw") end</script>
+			<command />
+			<keyCode>49</keyCode>
+			<keyModifier>536870912</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>West</name>
+			<packageName />
+			<script>if igoto and igoto.dirCmd then igoto.dirCmd("w") else send("w") end</script>
+			<command />
+			<keyCode>52</keyCode>
+			<keyModifier>536870912</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Northwest</name>
+			<packageName />
+			<script>if igoto and igoto.dirCmd then igoto.dirCmd("nw") else send("nw") end</script>
+			<command />
+			<keyCode>55</keyCode>
+			<keyModifier>536870912</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Walk north</name>
+			<packageName />
+			<script>send("N")</script>
+			<command />
+			<keyCode>56</keyCode>
+			<keyModifier>603979776</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Walk northeast</name>
+			<packageName />
+			<script>send("NE")</script>
+			<command />
+			<keyCode>57</keyCode>
+			<keyModifier>603979776</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Walk east</name>
+			<packageName />
+			<script>send("E")</script>
+			<command />
+			<keyCode>54</keyCode>
+			<keyModifier>603979776</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Walk southeast</name>
+			<packageName />
+			<script>send("SE")</script>
+			<command />
+			<keyCode>51</keyCode>
+			<keyModifier>603979776</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Walk south</name>
+			<packageName />
+			<script>send("S")</script>
+			<command />
+			<keyCode>50</keyCode>
+			<keyModifier>603979776</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Walk southwest</name>
+			<packageName />
+			<script>send("SW")</script>
+			<command />
+			<keyCode>49</keyCode>
+			<keyModifier>603979776</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Walk west</name>
+			<packageName />
+			<script>send("W")</script>
+			<command />
+			<keyCode>52</keyCode>
+			<keyModifier>603979776</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Walk northwest</name>
+			<packageName />
+			<script>send("NW")</script>
+			<command />
+			<keyCode>55</keyCode>
+			<keyModifier>603979776</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Look</name>
+			<packageName />
+			<script>send("look")</script>
+			<command />
+			<keyCode>53</keyCode>
+			<keyModifier>536870912</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Up</name>
+			<packageName />
+			<script>if igoto and igoto.dirCmd then igoto.dirCmd("up") else send("up") end</script>
+			<command />
+			<keyCode>45</keyCode>
+			<keyModifier>536870912</keyModifier>
+		</Key>
+		<Key isActive="yes" isFolder="no">
+			<name>Down</name>
+			<packageName />
+			<script>if igoto and igoto.dirCmd then igoto.dirCmd("down") else send("down") end</script>
+			<command />
+			<keyCode>43</keyCode>
+			<keyModifier>536870912</keyModifier>
+		</Key>
+	</KeyPackage>
+</MudletPackage>

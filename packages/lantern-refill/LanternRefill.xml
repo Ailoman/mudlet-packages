@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <TriggerPackage />
+  <TimerPackage />
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>Lantern Refill</name>
+      <packageName>LanternRefill</packageName>
+      <script></script>
+      <command></command>
+      <regex></regex>
+      <Alias isActive="yes" isFolder="no">
+        <name>refill lanterns</name>
+        <packageName></packageName>
+        <script>-- Kill any leftover trigger from a previous run.
+if lanternRefillTrigger then
+  killTrigger(lanternRefillTrigger)
+  lanternRefillTrigger = nil
+end
+
+-- One-shot trigger: fires when the sack runs dry mid-refill.
+lanternRefillTrigger = tempTrigger(
+  "You use all of your oil in partially refilling your large iron lantern.",
+  function()
+    killTrigger(lanternRefillTrigger)
+    lanternRefillTrigger = nil
+
+    send("keep empty oil sack")
+    send([[put empty oil sack in "looties"]])
+    send([[get oil from "gear"]])
+    send("light lantern")
+    send("light lantern 2")
+
+    cecho("\n&lt;green&gt;[lantern]&lt;reset&gt; oil swapped; lanterns lit.\n")
+  end
+)
+
+-- Start the refill; trigger fires only if the sack empties partway through.
+send("refill lantern")
+send("refill lantern 2")
+
+-- Light both regardless: harmless if already lit, needed if they ran dry.
+send("light lantern")
+send("light lantern 2")</script>
+        <command></command>
+        <regex>^refill lanterns$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+  <ActionPackage />
+  <KeyPackage />
+  <ScriptPackage />
+  <VariablePackage />
+</MudletPackage>

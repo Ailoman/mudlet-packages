@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+	<TriggerPackage />
+	<TimerPackage />
+	<AliasPackage>
+		<Alias isActive="yes" isFolder="no">
+			<name>Weapon locker switch</name>
+			<script>-- Clean up any previous run
+if swapWeaponTrigger then killTrigger(swapWeaponTrigger) swapWeaponTrigger = nil end
+if swapEqTrigger     then killTrigger(swapEqTrigger)     swapEqTrigger = nil     end
+
+-- Step 1: fire `eq` and catch the wielded right hand line
+swapEqTrigger = tempRegexTrigger(
+  "^Wielded in right hand(?:.*): (.+)$",
+  function()
+    killTrigger(swapEqTrigger)
+    swapEqTrigger = nil
+
+    local wielded = matches[2]:lower()
+    local putHandle, getHandle, skillCmd, label
+
+    if wielded:find("greatsword") then
+      putHandle = "greatsword"
+      getHandle = "blade"
+      skillCmd  = "comb"
+      label     = "GS -&gt; blade"
+    elseif wielded:find("blade") then
+      putHandle = "blade"
+      getHandle = "greatsword"
+      skillCmd  = "2h"
+      label     = "blade -&gt; GS"
+    else
+      cecho("\n&lt;red&gt;[swap]&lt;/red&gt; Unrecognised weapon in right hand: " .. matches[2] .. "\n")
+      return
+    end
+
+    cecho("\n&lt;cyan&gt;[swap]&lt;/cyan&gt; Walking to locker room... (" .. label .. ")\n")
+
+    -- Step 2: walk there, swap on arrival
+    swapWeaponTrigger = tempTrigger(
+      "Locker room",
+      function()
+        killTrigger(swapWeaponTrigger)
+        swapWeaponTrigger = nil
+
+        send("keep " .. putHandle)
+        tempTimer(0.3, function() send("open locker") end)
+        tempTimer(0.6, function() send("put " .. putHandle .. " in locker") end)
+        tempTimer(0.9, function() send("get " .. getHandle .. " from locker") end)
+        tempTimer(1.2, function() send("keep " .. getHandle) end)
+        tempTimer(1.5, function()
+          send(skillCmd)
+          cecho("\n&lt;green&gt;[swap]&lt;/green&gt; Done — " .. getHandle .. " equipped, " .. skillCmd .. " applied.\n")
+        end)
+      end
+    )
+
+    ice.gotoRoom("locker")
+  end
+)
+
+send("eq")</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^swapwep$</regex>
+		</Alias>
+	</AliasPackage>
+	<ActionPackage />
+	<ScriptPackage>
+		<ScriptGroup isActive="yes" isFolder="yes">
+			<name>Attack of Opportunity</name>
+			<packageName></packageName>
+			<script></script>
+			<eventHandlerList />
+			<Script isActive="yes" isFolder="no">
+				<name>AoO tracker</name>
+				<packageName></packageName>
+				<script>-- =====================================================================
+-- Attack of Opportunity tracker
+-- ---------------------------------------------------------------------
+-- Mirrors the mechanic used by the icesus.core HUD: the server advertises
+-- an available attack of opportunity through GMCP Char.Status, in the
+-- fields `momentum` and `special_momentum`. When either is a non-empty
+-- string, a skill is ready to fire with:  use &lt;skillname&gt;
+--
+-- This script keeps a global, aoo, in sync with those fields so the F1
+-- key (and anything else) can read them without depending on the full
+-- icesus.core HUD being installed. If icesus.core *is* loaded it sets the
+-- exact same GMCP fields, so this works either way.
+-- =====================================================================
+
+aoo = aoo or {}
+aoo.momentum        = aoo.momentum        or ""
+aoo.specialMomentum = aoo.specialMomentum or ""
+
+-- Pull the current values out of GMCP into our globals.
+function aoo.update()
+  local s = gmcp and gmcp.Char and gmcp.Char.Status
+  if not s then return end
+  aoo.momentum        = s.momentum         or ""
+  aoo.specialMomentum = s.special_momentum or ""
+end
+
+-- True if any attack of opportunity is currently available.
+function aoo.available()
+  return (aoo.momentum ~= "" and aoo.momentum ~= nil)
+      or (aoo.specialMomentum ~= "" and aoo.specialMomentum ~= nil)
+end
+
+-- Fire the available skill. Prefers special momentum (usually the rarer /
+-- stronger proc); falls back to normal momentum. Returns true if it sent.
+function aoo.use()
+  aoo.update()  -- make sure we're current before acting
+  local skill = nil
+  if aoo.specialMomentum and aoo.specialMomentum ~= "" then
+    skill = aoo.specialMomentum
+  elseif aoo.momentum and aoo.momentum ~= "" then
+    skill = aoo.momentum
+  end
+  if skill then
+    send("use " .. skill)
+    cecho("\n&lt;green&gt;[aoo]&lt;reset&gt; used &lt;yellow&gt;" .. skill .. "&lt;reset&gt;.\n")
+    return true
+  else
+    cecho("\n&lt;grey&gt;[aoo]&lt;reset&gt; no attack of opportunity available.\n")
+    return false
+  end
+end
+
+-- Keep the globals fresh whenever Char.Status arrives over GMCP.
+registerAnonymousEventHandler("gmcp.Char.Status", "aoo.update")
+
+-- Prime once on (re)load in case Status already arrived.
+aoo.update()</script>
+				<eventHandlerList />
+			</Script>
+		</ScriptGroup>
+	</ScriptPackage>
+	<KeyPackage>
+		<KeyGroup isActive="yes" isFolder="yes">
+			<name>Attack of Opportunity</name>
+			<packageName></packageName>
+			<command></command>
+			<script></script>
+			<Key isActive="yes" isFolder="no">
+				<name>F1 - use attack of opportunity</name>
+				<packageName></packageName>
+				<script>aoo.use()</script>
+				<command></command>
+				<keyCode>16777264</keyCode>
+				<keyModifier>0</keyModifier>
+			</Key>
+		</KeyGroup>
+	</KeyPackage>
+</MudletPackage>

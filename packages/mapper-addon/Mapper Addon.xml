@@ -1,0 +1,1442 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+	<TriggerPackage />
+	<TimerPackage />
+	<AliasPackage>
+		<AliasGroup isActive="yes" isFolder="yes">
+			<name>Icesus-Goto</name>
+			<script></script>
+			<command></command>
+			<packageName>Icesus-Goto</packageName>
+			<regex></regex>
+			<Alias isActive="yes" isFolder="no">
+				<name>Goto travel</name>
+				<script>igoto.cmd(matches[2] or "")</script>
+				<command></command>
+				<packageName>Icesus-Goto</packageName>
+				<regex>^(?:goto|gt)(?:\s+(.*?))?\s*$</regex>
+			</Alias>
+			<Alias isActive="yes" isFolder="no">
+				<name>Room nickname</name>
+				<script>igoto.nick(matches[2] or "")</script>
+				<command></command>
+				<packageName>Icesus-Goto</packageName>
+				<regex>^(?:rnick|rn)(?:\s+(.*?))?\s*$</regex>
+			</Alias>
+			<Alias isActive="yes" isFolder="no">
+				<name>Hidden exit link</name>
+				<script>igoto.hlink(matches[2] or "")</script>
+				<command></command>
+				<packageName>Icesus-Goto</packageName>
+				<regex>^(?:hlink|hl)(?:\s+(.*?))?\s*$</regex>
+			</Alias>
+			<Alias isActive="yes" isFolder="no">
+				<name>Direction reroute</name>
+				<script>igoto.dirCmd(matches[2])</script>
+				<command></command>
+				<packageName>Icesus-Goto</packageName>
+				<regex>^(north|south|east|west|northeast|northwest|southeast|southwest|up|down|in|out|n|s|e|w|ne|nw|se|sw|u|d)$</regex>
+			</Alias>
+			<Alias isActive="yes" isFolder="no">
+				<name>Room danger flag</name>
+				<script>igoto.rd(matches[2] or "")</script>
+				<command></command>
+				<packageName>Icesus-Goto</packageName>
+				<regex>^(?:rd)(?:\s+(.*?))?\s*$</regex>
+			</Alias>
+		</AliasGroup>
+	</AliasPackage>
+	<ActionPackage />
+	<ScriptPackage>
+		<ScriptGroup isActive="yes" isFolder="yes">
+			<name>Icesus-Goto</name>
+			<packageName>Icesus-Goto</packageName>
+			<script></script>
+			<eventHandlerList />
+			<ScriptGroup isActive="yes" isFolder="yes">
+				<name>Icesus-Goto</name>
+				<packageName>Icesus-Goto</packageName>
+				<script></script>
+				<eventHandlerList />
+				<Script isActive="yes" isFolder="no">
+					<name>igoto.core</name>
+					<packageName>Icesus-Goto</packageName>
+					<script>-- Icesus Goto + Room Nicknames -------------------------------------------
+-- A small add-on that sits on top of the official Icesus package's mapper.
+-- It never touches Icesus's own files: it reads the map data Icesus keeps
+-- (icesus.mapper.idMap.idToRoom, the hexId -&gt; Mudlet-room table), drives
+-- Mudlet's built-in pathfinder, and stores its own nicknames in a separate
+-- file, so the Icesus package auto-update can never clobber it.
+--
+-- Commands (aliases):
+--   goto &lt;dest&gt;   / gt &lt;dest&gt;    travel to a nickname, room number, or name
+--   goto stop     / gt stop      abort the current walk
+--   goto reweigh  / gt reweigh   (re)weight the whole map from terrain
+--   goto help     / gt help      show help
+--   rnick &lt;name&gt;  / rn &lt;name&gt;    save the current room under &lt;name&gt;
+--   rnick list    / rn list      list saved nicknames
+--   rnick del &lt;name&gt;             delete a nickname
+--   rnick go &lt;name&gt;              same as goto &lt;name&gt;
+-------------------------------------------------------------------------
+
+igoto = igoto or {}
+igoto.nicks = igoto.nicks or {}
+igoto.links = igoto.links or {}
+igoto.walk  = igoto.walk  or { active = false }
+if igoto.adjacent == nil then igoto.adjacent = true end   -- place new rooms adjacent
+if igoto.annotate == nil then igoto.annotate = true end   -- show hidden exits in room line
+if igoto.reroute  == nil then igoto.reroute  = true end   -- typing the map-dir sends the phrase
+
+-- ---- tunables ----------------------------------------------------------
+igoto.MAX_STEPS    = 500    -- hard cap on commands sent in one goto
+igoto.STEP_TIMEOUT = 2.5    -- s to wait for a Room.Info after a single step
+igoto.ROAD_SAFETY  = 2.0    -- s fallback if the "stop walking" line never comes
+igoto.STALL_LIMIT  = 25     -- give up if this many moves bring us no closer
+
+-- Cost-to-leave a room by terrain, seeded onto Mudlet room weights so the
+-- pathfinder prefers roads and cheap ground instead of shortest hop count.
+-- Values follow the movement-cost notes: road/crossing 1, path 2, open
+-- ground 6, rising to mountain 14.
+igoto.WEIGHTS = {
+  road = 1, crossing = 1, path = 2,
+  plains = 6, forest = 6,
+  swamp = 8, badlands = 8, ashlands = 8,
+  water = 10, ice = 10,
+  mountain = 14,
+}
+
+-- Env-id -&gt; weight, mirroring the Icesus package's TERRAIN_ENV constants,
+-- used to weight rooms already on the map (which no longer carry a live
+-- terrain string) from the colour Icesus painted them.
+igoto.ENV_WEIGHT = {
+  [200] = 1,   -- road
+  [201] = 2,   -- path
+  [202] = 10,  -- water
+  [203] = 8,   -- swamp
+  [204] = 14,  -- mountain
+  [205] = 6,   -- plains
+  [206] = 6,   -- forest
+  [207] = 10,  -- ice
+  [209] = 8,   -- badlands
+  [210] = 8,   -- ashlands
+  -- 208 is Icesus's transparent cursor room -- never weight it.
+}
+
+-- Standard directions accept short or long forms; normalise to the long
+-- forms Icesus's exits use. Anything not here (special exits like
+-- "enter shop") is sent verbatim.
+igoto.DIR = {
+  n = "north", s = "south", e = "east", w = "west",
+  ne = "northeast", nw = "northwest", se = "southeast", sw = "southwest",
+  u = "up", d = "down", ["in"] = "in", out = "out",
+  north = "north", south = "south", east = "east", west = "west",
+  northeast = "northeast", northwest = "northwest",
+  southeast = "southeast", southwest = "southwest",
+  up = "up", down = "down",
+}
+
+-- Capitalised abbreviations trigger Icesus's server-side road-walk, which
+-- follows the road across many rooms and stops on its own. Only the eight
+-- compass directions road-walk; up/down/in/out/specials always single-step.
+local CAP = {
+  north = "N", south = "S", east = "E", west = "W",
+  northeast = "NE", northwest = "NW", southeast = "SE", southwest = "SW",
+}
+
+-- Opposite directions — for the road-walk overshoot guard and for working out
+-- which way we moved into a new room (from the exit that leads back).
+local OPP = {
+  north = "south", south = "north", east = "west", west = "east",
+  northeast = "southwest", southwest = "northeast",
+  northwest = "southeast", southeast = "northwest",
+  up = "down", down = "up",
+}
+
+-- Special-exit command colour the game uses (the bright green of "leave").
+igoto.LINK_CMD_COLOR = { 0, 255, 0 }
+-- Colour of the dotted map line drawn for a cardinal hidden exit.
+igoto.LINK_LINE_COLOR = { 0, 200, 0 }
+
+-- Map-cell offsets (Mudlet coords: +y = north), for placing the far room of a
+-- hidden exit when a direction is given. Keyed by long form.
+igoto.OFFSET = {
+  north = { 0,  1, 0 }, south = { 0, -1, 0 },
+  east  = { 1,  0, 0 }, west  = {-1,  0, 0 },
+  northeast = { 1,  1, 0 }, northwest = {-1,  1, 0 },
+  southeast = { 1, -1, 0 }, southwest = {-1, -1, 0 },
+  up = { 0, 0, 1 }, down = { 0, 0, -1 },
+}
+
+-- ---- small helpers -----------------------------------------------------
+local function trim(s) return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", "")) end
+
+local function say(fmt, ...)
+  cecho("&lt;sea_green&gt;goto:&lt;reset&gt; " .. string.format(fmt, ...) .. "\n")
+end
+local function warn(fmt, ...)
+  cecho("&lt;indian_red&gt;goto:&lt;reset&gt; " .. string.format(fmt, ...) .. "\n")
+end
+
+local function copyArr(t)
+  local out = {}
+  if type(t) == "table" then for i = 1, #t do out[i] = t[i] end end
+  return out
+end
+
+local function idMap()
+  return icesus and icesus.mapper and icesus.mapper.idMap
+end
+
+-- Current room's hex id, read straight from the live GMCP payload so it
+-- does not depend on which Room.Info handler ran first; falls back to the
+-- pointer Icesus maintains.
+local function curHex()
+  local r = gmcp and gmcp.Room and gmcp.Room.Info
+  if r and type(r.id) == "string" and r.id ~= "" then return r.id end
+  return icesus and icesus.mapper and icesus.mapper.lastHexId
+end
+
+local function roomOfHex(hex)
+  local m = idMap()
+  if not (m and m.idToRoom and hex) then return nil end
+  local id = m.idToRoom[hex]
+  if id and (not roomExists or roomExists(id)) then return id end
+  return nil
+end
+
+-- Returns Mudlet room id, hex id of where the player is now.
+function igoto.currentRoom()
+  local hex = curHex()
+  if not hex then return nil, nil end
+  return roomOfHex(hex), hex
+end
+
+local function roomLabel(id)
+  local nm = (getRoomName and id) and getRoomName(id) or nil
+  if nm and nm ~= "" then return string.format("%s (#%d)", nm, id) end
+  return "room #" .. tostring(id)
+end
+
+-- Compact "#id (x,y,z) area N" for diagnostics.
+local function roomPos(id)
+  if not id then return "nil" end
+  local xs = "?"
+  if getRoomCoordinates then
+    local ok, x, y, z = pcall(getRoomCoordinates, id)
+    if ok and x then xs = string.format("(%s,%s,%s)", x, y, z) end
+  end
+  local a = "?"
+  if getRoomArea then
+    local okA, aid = pcall(getRoomArea, id)
+    if okA then a = tostring(aid) end
+  end
+  return string.format("#%s %s area %s", tostring(id), xs, a)
+end
+
+-- ---- terrain weighting -------------------------------------------------
+-- Seed the current room's weight from its live terrain, every step.
+-- Skip rooms flagged as dangerous so reweigh can't silently disarm the flag.
+function igoto.seedWeight()
+  if not setRoomWeight then return end
+  local r = gmcp and gmcp.Room and gmcp.Room.Info
+  if not r then return end
+  local hex = curHex()
+  if hex and igoto.danger[hex] then return end   -- preserve danger weight
+  local w = igoto.WEIGHTS[r.terrain]
+  if not w then return end
+  local id = igoto.currentRoom()
+  if id then pcall(setRoomWeight, id, w) end
+end
+
+-- One-shot: weight every room already on the map from its stored env
+-- colour. Run it once after installing so goto routes well immediately,
+-- without having to re-walk the whole world.
+-- Skips dangerous rooms and re-stamps their high weight at the end.
+function igoto.reweighAll()
+  if not setRoomWeight then warn("this Mudlet build has no setRoomWeight.") return end
+  local m = idMap()
+  if not (m and m.idToRoom) then warn("map not loaded yet -- walk a step, then try again.") return end
+  local seen, weighted = 0, 0
+  for hex, id in pairs(m.idToRoom) do
+    if (not roomExists) or roomExists(id) then
+      seen = seen + 1
+      if not igoto.danger[hex] then
+        local env = getRoomEnv and getRoomEnv(id)
+        local w = env and igoto.ENV_WEIGHT[env]
+        if w then pcall(setRoomWeight, id, w); weighted = weighted + 1 end
+      end
+    end
+  end
+  igoto.applyDanger()   -- re-stamp high weights on danger rooms
+  say("weighted %d of %d rooms from terrain.", weighted, seen)
+end
+
+-- ---- dangerous room flagging -------------------------------------------
+-- A flagged room gets weight DANGER_WEIGHT; the pathfinder strongly prefers
+-- any other route but will still use this room if it's the only way through.
+local DANGER_WEIGHT = 500
+local function dangerPath() return getMudletHomeDir() .. "/IcesusGoto.danger.lua" end
+
+igoto.danger = igoto.danger or {}   -- hex -&gt; true
+
+function igoto.saveDanger()
+  if table and table.save then pcall(table.save, dangerPath(), igoto.danger) end
+end
+
+function igoto.loadDanger()
+  local p = dangerPath()
+  if io and io.exists and io.exists(p) and table and table.load then
+    local t = {}; local ok = pcall(table.load, p, t)
+    if ok and type(t) == "table" then igoto.danger = t end
+  end
+end
+
+-- Stamp the high weight onto every flagged room (called at boot + after reweigh).
+function igoto.applyDanger()
+  if not setRoomWeight then return end
+  local m = idMap()
+  if not (m and m.idToRoom) then return end
+  for hex, _ in pairs(igoto.danger) do
+    local id = m.idToRoom[hex]
+    if id and ((not roomExists) or roomExists(id)) then
+      pcall(setRoomWeight, id, DANGER_WEIGHT)
+    end
+  end
+end
+
+function igoto.dangerMark()
+  local hex = curHex()
+  local id = hex and igoto.currentRoom()
+  if not hex or not id then warn("I don't know where you are yet.") return end
+  igoto.danger[hex] = true
+  if setRoomWeight then pcall(setRoomWeight, id, DANGER_WEIGHT) end
+  igoto.saveDanger()
+  say("room %s flagged as dangerous (weight %d). goto will avoid it.", roomLabel(id), DANGER_WEIGHT)
+end
+
+function igoto.dangerUnmark()
+  local hex = curHex()
+  local id = hex and igoto.currentRoom()
+  if not hex or not id then warn("I don't know where you are yet.") return end
+  if not igoto.danger[hex] then say("this room isn't flagged.") return end
+  igoto.danger[hex] = nil
+  -- Restore terrain weight from env colour (best-effort).
+  if setRoomWeight and getRoomEnv then
+    local env = getRoomEnv(id)
+    local w = env and igoto.ENV_WEIGHT[env]
+    pcall(setRoomWeight, id, w or 5)
+  end
+  igoto.saveDanger()
+  say("room %s unmarked -- weight restored to terrain.", roomLabel(id))
+end
+
+function igoto.dangerList()
+  local m = idMap()
+  local rows = {}
+  for hex, _ in pairs(igoto.danger) do
+    local id = m and m.idToRoom and m.idToRoom[hex]
+    local name = id and getRoomName and getRoomName(id) or "?"
+    rows[#rows + 1] = string.format("  &lt;indian_red&gt;%s&lt;reset&gt;  #%s  %s\n",
+      hex, tostring(id or "?"), name)
+  end
+  if #rows == 0 then say("no rooms flagged as dangerous.") return end
+  cecho(string.format("&lt;sea_green&gt;goto:&lt;reset&gt; %d dangerous room(s):\n", #rows))
+  table.sort(rows)
+  for _, line in ipairs(rows) do cecho(line) end
+end
+
+-- ---- destination resolution -------------------------------------------
+-- Returns roomId, errMessage, label. Order: nickname, room number, name.
+function igoto.resolve(arg)
+  arg = trim(arg)
+  if arg == "" then return nil, "no destination given" end
+
+  local nk = igoto.nicks[arg:lower()]
+  if nk then
+    local id = roomOfHex(nk.hex)
+    if id then return id, nil, string.format("'%s'", nk.name or arg) end
+    return nil, string.format("nickname '%s' points at a room that isn't on the map yet", nk.name or arg)
+  end
+
+  local n = tonumber(arg)
+  if n and roomExists and roomExists(n) then
+    return n, nil, roomLabel(n)
+  end
+
+  if searchRoom then
+    local ok, res = pcall(searchRoom, arg)   -- substring, case-insensitive
+    if ok and type(res) == "table" then
+      local ids = {}
+      for id in pairs(res) do ids[#ids + 1] = id end
+      if #ids == 1 then
+        return ids[1], nil, roomLabel(ids[1])
+      elseif #ids &gt; 1 then
+        table.sort(ids)
+        warn("'%s' matches %d rooms -- pick one by number:", arg, #ids)
+        for i = 1, math.min(#ids, 12) do
+          cecho(string.format("       &lt;cyan&gt;%d&lt;reset&gt;  %s\n", ids[i], res[ids[i]] or ""))
+        end
+        if #ids &gt; 12 then cecho("       ... and " .. (#ids - 12) .. " more.\n") end
+        return nil, nil, nil, true       -- handled: already reported
+      end
+    end
+  end
+
+  return nil, string.format("no nickname, room number, or room name matched '%s'", arg)
+end
+
+-- ---- the walker --------------------------------------------------------
+-- Recompute-per-stop. After every completed move we ask getPath again from
+-- the room we ACTUALLY landed in and take its first direction. There is no
+-- predicted room to match, so a walk can never be falsely declared "lost" --
+-- it stops only on arrival, when getPath finds no route, or when a step is
+-- physically blocked.
+--
+-- Road-walking: when on a road/path we send the capitalised direction and let
+-- the server walk the road until it halts on its own. Completion is read from
+-- the game's own lines (fast), not a timer: "You stop walking ...wards to ..."
+-- ends a segment, and "different terrain ... you stand still" means the capital
+-- was refused, so we cross with one lowercase step. A safety timer only fires
+-- if neither line arrives.
+
+local function clearTimers()
+  local w = igoto.walk
+  if not w then return end
+  if w.timeout then killTimer(w.timeout); w.timeout = nil end
+end
+
+function igoto.stop(silent)
+  clearTimers()
+  local w = igoto.walk
+  if w and w.active then
+    w.active = false
+    if not silent then cecho("&lt;orange&gt;goto:&lt;reset&gt; stopped.\n") end
+  end
+end
+
+local function finish()
+  local w = igoto.walk
+  clearTimers()
+  w.active = false
+  say("arrived at %s (%d moves).", w.label, w.moves or 0)
+end
+
+-- Road-walk (capitalised directions) works only in the Outworld. Outworld
+-- tiles are the ones the server gives grid coordinates to -- the same test
+-- the Icesus mapper itself uses to decide a tile is outworld.
+local function inOutworld()
+  local r = gmcp and gmcp.Room and gmcp.Room.Info
+  if type(r) ~= "table" then return false end
+  if type(r.coords) == "table" and #r.coords &gt;= 2 then return true end
+  if tonumber(r.x) and tonumber(r.y) then return true end   -- hedge on field shape
+  return false
+end
+
+-- Current room's name, from the live payload or the stored map.
+local function roomName()
+  local r = gmcp and gmcp.Room and gmcp.Room.Info
+  if r and type(r.name) == "string" and r.name ~= "" then return r.name end
+  local id = igoto.currentRoom()
+  if id and getRoomName then return getRoomName(id) end
+  return nil
+end
+
+-- Are we standing on a road/path? The server only road-walks (many rooms)
+-- from a road or path; off-road a capital direction just steps one room, and
+-- crossing a terrain boundary it refuses ("you stand still"). Roads/paths
+-- exist only in the Outworld, so this doubles as the "can road-walk" test.
+-- Most reliable signal is the room NAME ("On an east-west road", "A frozen
+-- path", "A crossing"); backed by the env colour Icesus paints (road=200,
+-- path=201) and the terrain string.
+local function onRoad()
+  local name = roomName()
+  if type(name) == "string" then
+    local n = name:lower()
+    if n:find("road") or n:find("path") or n:find("crossing")
+       or n:find("street") or n:find("bridge") or n:find("trail") then
+      return true
+    end
+  end
+  local id = igoto.currentRoom()
+  if id and getRoomEnv then
+    local e = getRoomEnv(id)
+    if e == 200 or e == 201 then return true end
+  end
+  local r = gmcp and gmcp.Room and gmcp.Room.Info
+  local t = r and r.terrain
+  return t == "road" or t == "path" or t == "crossing"
+end
+
+-- Decide and send the next command from wherever we are now.
+local function advance(retry)
+  local w = igoto.walk
+  if not (w and w.active) then return end
+  local here = igoto.currentRoom()
+  if not here then
+    if not retry then tempTimer(0, function() advance(true) end) end
+    return
+  end
+  if here == w.target then finish() return end
+  if not (getPath and getPath(here, w.target)) then
+    warn("no route from %s -- stopping.", roomLabel(here))
+    igoto.stop(true)
+    return
+  end
+  local dirs = copyArr(speedWalkDir)
+  if #dirs == 0 then finish() return end
+
+  -- Progress guard: remaining steps should trend downward.
+  local rem = #dirs
+  if rem &lt; (w.best or math.huge) then w.best = rem; w.stall = 0
+  else w.stall = (w.stall or 0) + 1 end
+  if (w.stall or 0) &gt; igoto.STALL_LIMIT then
+    warn("not getting closer (stuck near %s) -- stopping.", roomLabel(here))
+    igoto.stop(true) return
+  end
+  if (w.moves or 0) &gt;= igoto.MAX_STEPS then
+    warn("move limit (%d) reached -- stopping.", igoto.MAX_STEPS)
+    igoto.stop(true) return
+  end
+
+  -- Normalise the pathfinder's direction to its long form BEFORE any lookup:
+  -- getPath may hand back "e"/"sw" or "east"/"southwest"; a special exit (e.g.
+  -- "enter shop") isn't in the table and passes through verbatim.
+  local raw = dirs[1]
+  local d = igoto.DIR[raw] or raw
+  -- Overshot a turn on the last road-walk? Approach the next one on foot.
+  if w.lastMode == "road" and OPP[d] and OPP[d] == w.lastDir then
+    w.forceStep = 3
+  end
+  -- Road-walk needs BOTH: in the Outworld AND on a road/path. The Outworld
+  -- guard matters because an indoor room named like a road/street would pass
+  -- onRoad() on its own.
+  local road = onRoad()
+  local ow = inOutworld()
+  local canRoad = CAP[d] and ow and road and (not w.forceStep or w.forceStep &lt;= 0)
+
+  if igoto.trace then
+    cecho(string.format("&lt;grey&gt;[goto] raw=%s canon=%s outworld=%s onRoad=%s -&gt; %s&lt;reset&gt;\n",
+      tostring(raw), tostring(d), tostring(ow), tostring(road),
+      canRoad and ("road " .. CAP[d]) or "step"))
+  end
+
+  w.moves = (w.moves or 0) + 1
+  w.lastDir = d
+  w.awaiting = true
+  clearTimers()
+  if canRoad then
+    w.mode, w.lastMode = "road", "road"
+    w.roadFrom = here   -- detect zero-progress stops (road leads to boundary)
+    -- Completion is driven by the "You stop walking ..." trigger (fast) and
+    -- refusal by the "you stand still" trigger; this timer is only a safety
+    -- net for when neither line arrives.
+    w.timeout = tempTimer(igoto.ROAD_SAFETY, function() igoto.roadSafety() end)
+    send(CAP[d])
+  else
+    w.mode, w.lastMode = "step", "step"
+    if w.forceStep and w.forceStep &gt; 0 then w.forceStep = w.forceStep - 1 end
+    w.timeout = tempTimer(igoto.STEP_TIMEOUT, function() igoto.onStepTimeout() end)
+    send(d)
+  end
+end
+
+function igoto.start(targetId, label)
+  igoto.stop(true)
+  local from = igoto.currentRoom()
+  if not from then
+    warn("I don't know where you are yet -- take one step so the mapper sees the room.")
+    return
+  end
+  if from == targetId then say("you're already there.") return end
+  if not (getPath and getPath(from, targetId)) then
+    warn("no path found to %s.", label or ("#" .. tostring(targetId)))
+    return
+  end
+  igoto.walk = {
+    active = true,
+    target = targetId, label = label or ("#" .. tostring(targetId)),
+    moves = 0, best = math.huge, stall = 0,
+  }
+  say("routing to %s (%d steps).", igoto.walk.label, #speedWalkDir)
+  advance()
+end
+
+-- Consume the current segment and send the next command. Guarded so each
+-- segment advances exactly once.
+local function step()
+  local w = igoto.walk
+  if not (w and w.active) then return end
+  w.awaiting = false
+  clearTimers()
+  advance()
+end
+
+-- Trigger: "You stop walking &lt;dir&gt;wards to ..." — a road-walk segment ended.
+-- Advance on the next event-loop tick, by when the final room's GMCP has been
+-- applied, so we recompute from the true stopping room (no guessing).
+function igoto.onStopWalk()
+  local w = igoto.walk
+  if not (w and w.active and w.mode == "road" and w.awaiting) then return end
+  w.awaiting = false
+  clearTimers()
+  tempTimer(0, function()
+    local w = igoto.walk
+    if not (w and w.active) then return end
+    -- "The road leads to &lt;non-Outworld entrance&gt;" stops a road-walk without
+    -- actually moving the player. Detect zero progress: if we're still in the
+    -- same room we road-walked FROM, fall back to a single lowercase step so
+    -- we cross the boundary rather than re-firing the walk forever.
+    local here = igoto.currentRoom()
+    if here and w.roadFrom and here == w.roadFrom then
+      if igoto.trace then
+        cecho("&lt;grey&gt;[goto] road-walk stopped without movement -- forcing single step&lt;reset&gt;\n")
+      end
+      w.mode, w.lastMode = "step", "step"
+      w.awaiting = true
+      w.timeout = tempTimer(igoto.STEP_TIMEOUT, function() igoto.onStepTimeout() end)
+      send(w.lastDir)
+      return
+    end
+    advance()
+  end)
+end
+
+-- Trigger: "As there is different terrain ... you stand still." — the capital
+-- move was refused (the road doesn't run that way). A lowercase step in the
+-- same direction crosses the boundary, so take exactly one.
+function igoto.onRefused()
+  local w = igoto.walk
+  if not (w and w.active and w.mode == "road" and w.awaiting) then return end
+  w.awaiting = false
+  clearTimers()
+  tempTimer(0, function()
+    local w = igoto.walk
+    if not (w and w.active) then return end
+    w.mode, w.lastMode = "step", "step"
+    w.awaiting = true
+    w.timeout = tempTimer(igoto.STEP_TIMEOUT, function() igoto.onStepTimeout() end)
+    send(w.lastDir)
+  end)
+end
+
+-- Safety net: neither road-walk line arrived within ROAD_SAFETY. Recompute
+-- from wherever we actually are.
+function igoto.roadSafety()
+  local w = igoto.walk
+  if not (w and w.active and w.mode == "road" and w.awaiting) then return end
+  step()
+end
+
+-- A single step produced no Room.Info -&gt; physically blocked (door/mob/EP).
+function igoto.onStepTimeout()
+  local w = igoto.walk
+  if not (w and w.active and w.awaiting and w.mode == "step") then return end
+  local d = w.lastDir
+  w.active = false
+  clearTimers()
+  warn("stuck going %s (no movement). Clear it, then re-run goto.", d)
+end
+
+-- GMCP hook: seed the weight; in step mode a Room.Info completes the step.
+-- Road-mode completion is driven by the stop-walk trigger, not this. Deferred
+-- with tempTimer(0) so Icesus's own Room.Info handler ran first.
+function igoto.onRoomEvent()
+  tempTimer(0, function()
+    igoto.seedWeight()
+    igoto.reapplyLinksHere()   -- restore any hidden exits the mapper pruned
+    igoto.placeAdjacent()      -- drop a newly-discovered indoor room next door
+    igoto.capturePending()     -- complete a hlink recording, if one is armed
+    igoto._prevHex = curHex()  -- remember where we are for the next move
+    local w = igoto.walk
+    if not (w and w.active and w.awaiting) then return end
+    if w.mode == "step" then step() end
+  end)
+end
+
+-- ---- nicknames ---------------------------------------------------------
+local function nicksPath() return getMudletHomeDir() .. "/IcesusGoto.nicks.lua" end
+
+function igoto.saveNicks()
+  if table and table.save then pcall(table.save, nicksPath(), igoto.nicks) end
+end
+
+function igoto.loadNicks()
+  local p = nicksPath()
+  if io and io.exists and io.exists(p) and table and table.load then
+    local t = {}
+    local ok = pcall(table.load, p, t)
+    if ok and type(t) == "table" then igoto.nicks = t end
+  end
+end
+
+function igoto.nickAdd(name)
+  name = trim(name)
+  if name == "" then warn("usage: rnick &lt;name&gt;") return end
+  local id, hex = igoto.currentRoom()
+  if not hex then warn("I don't know where you are yet -- take one step first.") return end
+  local rname = (id and getRoomName) and getRoomName(id) or ""
+  igoto.nicks[name:lower()] = { name = name, hex = hex, rname = rname }
+  igoto.saveNicks()
+  say("saved '%s' -&gt; %s", name, (rname ~= "" and rname) or hex)
+end
+
+function igoto.nickDel(name)
+  name = trim(name)
+  local k = name:lower()
+  if igoto.nicks[k] then
+    igoto.nicks[k] = nil
+    igoto.saveNicks()
+    say("deleted nickname '%s'.", name)
+  else
+    warn("no nickname '%s'.", name)
+  end
+end
+
+function igoto.nickList()
+  local keys = {}
+  for k in pairs(igoto.nicks) do keys[#keys + 1] = k end
+  if #keys == 0 then say("no nicknames saved yet -- stand in a room and 'rnick &lt;name&gt;'.") return end
+  table.sort(keys)
+  cecho("&lt;sea_green&gt;goto:&lt;reset&gt; saved nicknames:\n")
+  for _, k in ipairs(keys) do
+    local v = igoto.nicks[k]
+    local on = roomOfHex(v.hex) and "" or "  &lt;indian_red&gt;(not on map)&lt;reset&gt;"
+    cecho(string.format("       &lt;cyan&gt;%-16s&lt;reset&gt; %s%s\n", v.name or k, v.rname ~= "" and v.rname or v.hex, on))
+  end
+end
+
+-- ---- hidden exits ------------------------------------------------------
+-- A "hidden exit" is a command (e.g. "push statue", "climb vines") that moves
+-- you between two rooms with no compass direction. In Mudlet that's a SPECIAL
+-- EXIT. The Icesus mapper prunes special exits it doesn't see in Room.Info,
+-- and a hidden exit never appears there -- so we keep our own record and
+-- re-apply it after every visit, and getPath/goto then route through it.
+local function linksPath() return getMudletHomeDir() .. "/IcesusGoto.links.lua" end
+
+function igoto.saveLinks()
+  if table and table.save then pcall(table.save, linksPath(), igoto.links) end
+end
+
+function igoto.loadLinks()
+  local p = linksPath()
+  if io and io.exists and io.exists(p) and table and table.load then
+    local t = {}
+    local ok = pcall(table.load, p, t)
+    if ok and type(t) == "table" then igoto.links = t end
+  end
+end
+
+-- Create (and unlock) a special exit. Mudlet's function is addSpecialExit;
+-- setSpecialExit does NOT exist (confirmed on 4.22.0). Fall back just in case.
+local function makeSpecialExit(from, to, cmd)
+  local fn = addSpecialExit or setSpecialExit
+  if not fn then return false end
+  local ok = pcall(fn, from, to, cmd)
+  if ok and lockSpecialExit then pcall(lockSpecialExit, from, to, cmd, false) end
+  return ok
+end
+local function haveSpecialExitApi()
+  return (addSpecialExit or setSpecialExit) ~= nil
+end
+
+-- Draw the map marker for a hidden exit that has a map-direction:
+--   up/down  -&gt; an exit stub, so Mudlet paints the up/down symbol on the room.
+--   cardinal -&gt; a dotted custom line to the destination room (NO stub).
+local function applyLinkVisual(srcRoom, destRoom, dir)
+  if not dir then return end
+  if dir == "up" or dir == "down" then
+    if setExitStub then pcall(setExitStub, srcRoom, dir, true) end
+  elseif igoto.OFFSET[dir] then
+    -- Cardinals: dotted line only, no exit stub (stub would imply a real mapped exit).
+    if addCustomLine and destRoom then
+      if removeCustomLine then pcall(removeCustomLine, srcRoom, dir) end
+      pcall(addCustomLine, srcRoom, destRoom, dir, "dot line", igoto.LINK_LINE_COLOR)
+    end
+  end
+end
+
+-- Push all recorded links into the live map (best-effort; used at boot).
+function igoto.applyLinks()
+  if not haveSpecialExitApi() then return end
+  for srcHex, list in pairs(igoto.links) do
+    local srcRoom = roomOfHex(srcHex)
+    if srcRoom then
+      for _, lk in ipairs(list) do
+        local d = roomOfHex(lk.destHex)
+        if d then
+          makeSpecialExit(srcRoom, d, lk.cmd)
+          applyLinkVisual(srcRoom, d, lk.dir)
+        end
+      end
+    end
+  end
+end
+
+-- Re-add any of THIS room's hidden exits the mapper just pruned. Runs on every
+-- Room.Info (after the mapper), so a link is missing for at most a few ms.
+function igoto.reapplyLinksHere()
+  if not haveSpecialExitApi() then return end
+  local cur = curHex()
+  local list = cur and igoto.links[cur]
+  if not list then return end
+  local srcRoom = roomOfHex(cur)
+  if not srcRoom then return end
+  -- getSpecialExits is { roomid = { command = lockStatus } } on modern Mudlet,
+  -- or a flat { command = roomid } on old builds. Collect command names from both.
+  local have = {}
+  if getSpecialExits then
+    local ok, ex = pcall(getSpecialExits, srcRoom)
+    if ok and type(ex) == "table" then
+      for k, v in pairs(ex) do
+        if type(v) == "table" then
+          for cmd in pairs(v) do have[cmd] = true end
+        else
+          have[k] = true
+        end
+      end
+    end
+  end
+  for _, lk in ipairs(list) do
+    if not have[lk.cmd] then
+      local d = roomOfHex(lk.destHex)
+      if d and makeSpecialExit(srcRoom, d, lk.cmd) then
+        applyLinkVisual(srcRoom, d, lk.dir)
+        if icesus and icesus.mapper and icesus.mapper.noteDirty then
+          icesus.mapper.noteDirty()
+        end
+      end
+    end
+  end
+end
+
+-- Arm a recording: remember where we are, then send the phrase and wait for
+-- the room we land in.
+function igoto.startLink(phrase, dir)
+  phrase = trim(phrase)
+  if phrase == "" then warn("usage: hlink [&lt;mapdir&gt;] &lt;phrase&gt;") return end
+  if igoto.walk and igoto.walk.active then
+    warn("finish the current goto (or 'goto stop') before recording a link.")
+    return
+  end
+  local srcRoom, srcHex = igoto.currentRoom()
+  if not srcHex then warn("I don't know where you are yet -- take one step first.") return end
+  if not srcRoom then warn("this room isn't mapped yet -- take a step so the mapper records it.") return end
+  if igoto._pendingLink and igoto._pendingLink.timer then killTimer(igoto._pendingLink.timer) end
+  igoto._pendingLink = {
+    srcHex = srcHex, srcRoom = srcRoom, phrase = phrase, dir = dir,
+    sname = (getRoomName and getRoomName(srcRoom)) or "",
+  }
+  igoto._pendingLink.timer = tempTimer(8, function() igoto.cancelLink(true) end)
+  say("recording hidden exit '%s' from %s%s -- sending it now...",
+    phrase, igoto._pendingLink.sname ~= "" and igoto._pendingLink.sname or ("#" .. srcRoom),
+    dir and ("  (will place the far room " .. dir .. ")") or "")
+  send(phrase)
+end
+
+function igoto.cancelLink(timedout)
+  local p = igoto._pendingLink
+  if not p then return end
+  if p.timer then killTimer(p.timer) end
+  igoto._pendingLink = nil
+  if timedout then
+    warn("link '%s' not recorded -- no movement seen (did the command work?).", p.phrase)
+  end
+end
+
+-- Called on each Room.Info: if a recording is armed and we've moved, wire the
+-- special exit source -&gt; here and remember it.
+function igoto.capturePending()
+  local p = igoto._pendingLink
+  if not p then return end
+  local destHex = curHex()
+  if not destHex or destHex == p.srcHex then return end   -- not moved yet
+  igoto._pendingLink = nil
+  if p.timer then killTimer(p.timer) end
+  local srcRoom  = roomOfHex(p.srcHex)
+  local destRoom = roomOfHex(destHex)
+  if not (srcRoom and destRoom) then
+    warn("link '%s': couldn't resolve both rooms on the map.", p.phrase)
+    return
+  end
+  makeSpecialExit(srcRoom, destRoom, p.phrase)
+  applyLinkVisual(srcRoom, destRoom, p.dir)
+
+  igoto.links[p.srcHex] = igoto.links[p.srcHex] or {}
+  local list = igoto.links[p.srcHex]
+  for i = #list, 1, -1 do if list[i].cmd == p.phrase then table.remove(list, i) end end
+  list[#list + 1] = {
+    cmd = p.phrase, destHex = destHex, dir = p.dir,
+    sname = p.sname, dname = (getRoomName and getRoomName(destRoom)) or "",
+  }
+  igoto.saveLinks()
+
+  -- Optional map placement: only for up/down (cardinals use a dotted line but
+  -- don't force coordinates — the mapper owns x/y layout).
+  if p.dir and (p.dir == "up" or p.dir == "down")
+      and getRoomCoordinates and setRoomCoordinates then
+    -- Area guard: don't yank the dest room into a different area's coordinate
+    -- space. Skip placement if they're in different (known) areas.
+    local sameArea = true
+    if getRoomArea then
+      local okS, sArea = pcall(getRoomArea, srcRoom)
+      local okD, dArea = pcall(getRoomArea, destRoom)
+      if okS and okD and sArea ~= dArea and sArea &gt; 0 and dArea &gt; 0 then
+        sameArea = false
+      end
+    end
+    if sameArea then
+      local ok, sx, sy, sz = pcall(getRoomCoordinates, srcRoom)
+      if ok and sx then
+        local o = igoto.OFFSET[p.dir]
+        local nx, ny, nz = sx + o[1], sy + o[2], sz + o[3]
+        pcall(setRoomCoordinates, destRoom, nx, ny, nz)
+        -- Tell the Icesus mapper where we put it, so it anchors the NEXT rooms
+        -- you discover to this cell (same z-plane) instead of the old one, and
+        -- mark the cell taken so freeCoord won't drop another room on top of it.
+        local m = idMap()
+        if m then
+          if m.placed then m.placed[destHex] = { nx, ny, nz } end
+          if getRoomArea and m.areaCoords then
+            local okA, aid = pcall(getRoomArea, destRoom)
+            if okA and aid then
+              m.areaCoords[aid] = m.areaCoords[aid] or {}
+              m.areaCoords[aid][nx .. "," .. ny .. "," .. nz] = true
+            end
+          end
+        end
+        if getRoomArea and setRoomArea then
+          local okA, aid = pcall(getRoomArea, srcRoom)
+          if okA and aid and aid &gt; 0 then pcall(setRoomArea, destRoom, aid) end
+        end
+      end
+    end
+  end
+  if icesus and icesus.mapper and icesus.mapper.noteDirty then icesus.mapper.noteDirty() end
+
+  local placedNote = ""
+  if p.dir then
+    if p.dir == "up" or p.dir == "down" then
+      placedNote = "  (placed " .. p.dir .. ")"
+    else
+      placedNote = "  (dotted line " .. p.dir .. ")"
+    end
+  end
+  say("linked '%s': %s --&gt; %s%s", p.phrase,
+    (p.sname ~= "" and p.sname) or ("#" .. srcRoom),
+    (getRoomName and getRoomName(destRoom)) or ("#" .. destRoom),
+    placedNote)
+
+  say("  src %s", roomPos(srcRoom))
+  say("  dest %s", roomPos(destRoom))
+  -- Self-test: can the pathfinder now route across it? (one hop, source-&gt;dest)
+  local ok = getPath and getPath(srcRoom, destRoom)
+  if ok then
+    say("pathfinder routes through it. Note it's ONE-WAY (%s only).", p.phrase)
+    if p.dir then say("tip: go through, then run &lt;cyan&gt;goto relayout&lt;reset&gt; to tidy the rooms onto this level.") end
+  else
+    warn("pathfinder is NOT routing through it yet. Run &lt;cyan&gt;hlink check&lt;reset&gt; "
+      .. "standing in the source room and send me the output.")
+  end
+end
+
+function igoto.linkDel(phrase)
+  phrase = trim(phrase)
+  if phrase == "" then warn("usage: hlink del &lt;phrase&gt;") return end
+  local removed = 0
+  for srcHex, list in pairs(igoto.links) do
+    for i = #list, 1, -1 do
+      if list[i].cmd == phrase then
+        local srcRoom = roomOfHex(srcHex)
+        if srcRoom then
+          if removeSpecialExit then pcall(removeSpecialExit, srcRoom, phrase) end
+          local dir = list[i].dir
+          if dir then
+            if removeCustomLine then pcall(removeCustomLine, srcRoom, dir) end
+            -- Only up/down use exit stubs; cardinals use dotted lines only.
+            if setExitStub and (dir == "up" or dir == "down") then
+              pcall(setExitStub, srcRoom, dir, false)
+            end
+          end
+        end
+        table.remove(list, i); removed = removed + 1
+      end
+    end
+    if #list == 0 then igoto.links[srcHex] = nil end
+  end
+  igoto.saveLinks()
+  if removed &gt; 0 then say("removed %d hidden link(s) named '%s'.", removed, phrase)
+  else warn("no hidden link named '%s'.", phrase) end
+end
+
+function igoto.linkList()
+  local rows = {}
+  for srcHex, list in pairs(igoto.links) do
+    for _, lk in ipairs(list) do
+      local live = roomOfHex(srcHex) and roomOfHex(lk.destHex)
+      rows[#rows + 1] = string.format("       &lt;cyan&gt;%s&lt;reset&gt;  %s -&gt; %s%s\n",
+        lk.cmd, (lk.sname ~= "" and lk.sname) or srcHex,
+        (lk.dname ~= "" and lk.dname) or lk.destHex,
+        live and "" or "  &lt;indian_red&gt;(off map)&lt;reset&gt;")
+    end
+  end
+  if #rows == 0 then say("no hidden links recorded yet.") return end
+  cecho("&lt;sea_green&gt;goto:&lt;reset&gt; hidden exits:\n")
+  table.sort(rows)
+  for _, line in ipairs(rows) do cecho(line) end
+end
+
+-- Diagnostic: what does the map actually hold for the current room, and can
+-- getPath route across each recorded link from here?
+function igoto.linkCheck()
+  local cur, hex = igoto.currentRoom()
+  cecho("&lt;sea_green&gt;goto check:&lt;reset&gt;\n")
+  cecho(string.format("  here: %s  hex=%s\n", cur and roomPos(cur) or "nil", tostring(hex)))
+  if not cur then warn("this room isn't on the map -- take a step.") return end
+
+  if getSpecialExits then
+    local ok, ex = pcall(getSpecialExits, cur)
+    if ok and type(ex) == "table" then
+      local shown = false
+      for k, v in pairs(ex) do
+        if type(v) == "table" then                 -- {roomid = {cmd = lock}}
+          for cmd, lock in pairs(v) do
+            shown = true
+            cecho(string.format("  special exit: '%s' -&gt; #%s  (lock=%s)\n",
+              tostring(cmd), tostring(k), tostring(lock)))
+          end
+        else                                         -- flat {cmd = roomid}
+          shown = true
+          cecho(string.format("  special exit: '%s' -&gt; #%s\n", tostring(k), tostring(v)))
+        end
+      end
+      if not shown then cecho("  special exits on this room: (none)\n") end
+    else
+      cecho("  getSpecialExits returned nothing usable\n")
+    end
+  end
+
+  local list = hex and igoto.links[hex]
+  if not list or #list == 0 then
+    cecho("  recorded links from this room: (none)\n")
+  else
+    for _, lk in ipairs(list) do
+      local d = roomOfHex(lk.destHex)
+      local verdict
+      if not d then verdict = "&lt;indian_red&gt;dest not on map&lt;reset&gt;"
+      elseif getPath and getPath(cur, d) then verdict = "&lt;green&gt;PATH OK&lt;reset&gt;"
+      else verdict = "&lt;indian_red&gt;NO PATH&lt;reset&gt;" end
+      cecho(string.format("  link '%s' -&gt; %s  %s\n",
+        lk.cmd, d and roomPos(d) or ("hex "..tostring(lk.destHex)), verdict))
+    end
+  end
+end
+
+-- Direction commands route through here: if the current room has a hidden exit
+-- mapped to that direction, send the phrase instead; otherwise pass the
+-- direction through unchanged. (send() bypasses aliases, so goto is unaffected.)
+function igoto.dirCmd(raw)
+  raw = trim(raw)
+  if igoto.reroute then
+    local d = igoto.DIR[raw:lower()]
+    local hex = d and curHex()
+    local list = hex and igoto.links[hex]
+    if list then
+      for _, lk in ipairs(list) do
+        if lk.dir == d then send(lk.cmd) return end
+      end
+    end
+  end
+  send(raw)
+end
+
+-- hlink [&lt;mapdir&gt;] &lt;phrase&gt; | hlink list | hlink del &lt;phrase&gt; | hlink check
+function igoto.hlink(arg)
+  arg = trim(arg)
+  local first, rest = arg:match("^(%S+)%s*(.*)$")
+  local low = (first or ""):lower()
+  if low == "" or low == "list" then igoto.linkList() return end
+  if low == "check" or low == "test" then igoto.linkCheck() return end
+  if low == "del" or low == "rm" or low == "delete" then igoto.linkDel(rest) return end
+  -- Optional leading map-direction (only when a phrase follows it).
+  local canon = igoto.DIR[low]
+  if canon and igoto.OFFSET[canon] and trim(rest) ~= "" then
+    igoto.startLink(rest, canon)
+  else
+    igoto.startLink(arg, nil)
+  end
+end
+
+-- ---- settings persistence ---------------------------------------------
+local function settingsPath() return getMudletHomeDir() .. "/IcesusGoto.settings.lua" end
+
+function igoto.saveSettings()
+  if table and table.save then
+    pcall(table.save, settingsPath(),
+      { adjacent = igoto.adjacent, annotate = igoto.annotate, reroute = igoto.reroute })
+  end
+end
+
+function igoto.loadSettings()
+  local p = settingsPath()
+  if io and io.exists and io.exists(p) and table and table.load then
+    local t = {}
+    local ok = pcall(table.load, p, t)
+    if ok and type(t) == "table" then
+      if t.adjacent ~= nil then igoto.adjacent = t.adjacent end
+      if t.annotate ~= nil then igoto.annotate = t.annotate end
+      if t.reroute  ~= nil then igoto.reroute  = t.reroute  end
+    end
+  end
+end
+
+-- ---- adjacency placement -----------------------------------------------
+-- Newly discovered indoor rooms are dropped next to the room you came from, in
+-- the direction you moved, using that room's ACTUAL current coordinates (so it
+-- follows tiles you've dragged by hand). Only ever touches rooms new to the map
+-- (never rooms already visited before this session) and never outworld tiles,
+-- so it won't fight the mapper's fixed grid or a manual arrangement you've made.
+local SHORT = {
+  north = "n", south = "s", east = "e", west = "w",
+  northeast = "ne", northwest = "nw", southeast = "se", southwest = "sw",
+  up = "u", down = "d", ["in"] = "in", out = "out",
+}
+
+-- Remember the last movement direction the player sent, so a new room can be
+-- placed the way we actually moved (even through a one-way exit).
+function igoto.onSend(_, cmd)
+  local d = igoto.DIR[trim(tostring(cmd or "")):lower()]
+  igoto._lastSentDir = d          -- nil for non-direction commands
+end
+
+-- PLANE LOCK (only). On each move we fix ONLY the z of the room we arrived in,
+-- so a floor stays a floor -- e.g. everything past an `hlink down` stays one
+-- level below. We never touch x/y: room positioning is left entirely to the
+-- Mudlet mapper (auto x/y "adjacency" was removed by request -- it fought the
+-- mapper and stretched things). Toggle with `goto planelock on|off`
+-- (`goto adjacent` is kept as a synonym).
+function igoto.placeAdjacent()
+  if not (igoto.adjacent and setRoomCoordinates and getRoomCoordinates) then return end
+  local r = gmcp and gmcp.Room and gmcp.Room.Info
+  if type(r) ~= "table" or type(r.id) ~= "string" or r.id == "" then return end
+  if type(r.coords) == "table" and #r.coords &gt;= 2 then return end  -- outworld: authoritative
+  local hex = r.id
+  local room = roomOfHex(hex)
+  if not room then return end
+  local fromHex = igoto._prevHex
+  if not fromHex or fromHex == hex then return end
+  local fromRoom = roomOfHex(fromHex)
+  if not fromRoom then return end
+
+  -- Which way did we move? (only its vertical component matters here)
+  local moveDir = (igoto.walk and igoto.walk.active and igoto.walk.lastDir) or igoto._lastSentDir
+  igoto._lastSentDir = nil
+  if not (moveDir and igoto.OFFSET[moveDir]) then
+    local backDir
+    if type(r.exits) == "table" then
+      for dir, dest in pairs(r.exits) do
+        if dest == fromHex then backDir = igoto.DIR[dir] or dir break end
+      end
+    end
+    moveDir = backDir and OPP[backDir]
+  end
+  if not (moveDir and igoto.OFFSET[moveDir]) then return end
+
+  -- Same area only; the from-room's z + this move's vertical step is the plane.
+  if getRoomArea then
+    local okF, fa = pcall(getRoomArea, fromRoom)
+    local okT, ta = pcall(getRoomArea, room)
+    if okF and okT and fa ~= ta then return end
+  end
+  local ok, _, _, fz = pcall(getRoomCoordinates, fromRoom)
+  if not (ok and fz) then return end
+  local wantZ = fz + igoto.OFFSET[moveDir][3]
+
+  local okR, cx, cy, cz = pcall(getRoomCoordinates, room)
+  if not (okR and cx) or cz == wantZ then return end   -- already on the right plane
+  pcall(setRoomCoordinates, room, cx, cy, wantZ)        -- keep x/y, fix only z
+  local m = idMap()
+  if m and m.placed then m.placed[hex] = { cx, cy, wantZ } end
+  if icesus and icesus.mapper and icesus.mapper.noteDirty then icesus.mapper.noteDirty() end
+end
+
+-- Tidy the CURRENT FLOOR: from the room you're in, walk cardinal exits only
+-- (never up/down/in/out, and never a special exit), staying on the same z and
+-- in the same area, and lay each room one cell from its parent in the connecting
+-- direction. Rooms on other floors are left untouched. Explicit command, so
+-- moving already-placed rooms on this floor is intended.
+function igoto.relayout()
+  if not (getRoomExits and getRoomCoordinates and setRoomCoordinates) then
+    warn("relayout: map API unavailable.") return
+  end
+  local startRoom = igoto.currentRoom()
+  if not startRoom then warn("relayout: this room isn't mapped -- take a step.") return end
+  local startArea
+  if getRoomArea then local ok, a = pcall(getRoomArea, startRoom); if ok then startArea = a end end
+  local m = idMap()
+  if m and startArea and m.gridmoded and m.gridmoded[startArea] then
+    warn("relayout: this is an outworld/grid area -- its coordinates are fixed. Skipped.")
+    return
+  end
+  local okS, _, _, startZ = pcall(getRoomCoordinates, startRoom)
+  if not (okS and startZ) then warn("relayout: can't read this room's position.") return end
+  local roomToHex = {}
+  if m and m.idToRoom then for h, rm in pairs(m.idToRoom) do roomToHex[rm] = h end end
+
+  local visited = { [startRoom] = true }
+  local queue = { startRoom }
+  local moved, LIMIT = 0, 250
+  while #queue &gt; 0 and moved &lt; LIMIT do
+    local room = table.remove(queue, 1)
+    local okC, px, py, pz = pcall(getRoomCoordinates, room)
+    local ok, ex = pcall(getRoomExits, room)
+    if okC and px and ok and type(ex) == "table" then
+      for dir, dest in pairs(ex) do
+        local long = igoto.DIR[dir] or dir
+        local o = igoto.OFFSET[long]
+        if o and o[3] == 0 and dest and not visited[dest] then   -- cardinal only (same floor)
+          local same = true
+          if getRoomArea and startArea then
+            local okA, a = pcall(getRoomArea, dest); if okA and a ~= startArea then same = false end
+          end
+          local onFloor = true                                    -- leave other floors alone
+          local okZ, _, _, dz = pcall(getRoomCoordinates, dest)
+          if okZ and dz and dz ~= startZ then onFloor = false end
+          if same and onFloor then
+            visited[dest] = true
+            local nx, ny, nz = px + o[1], py + o[2], pz + o[3]     -- nz stays = startZ
+            pcall(setRoomCoordinates, dest, nx, ny, nz)
+            if m then
+              local hx = roomToHex[dest]
+              if hx and m.placed then m.placed[hx] = { nx, ny, nz } end
+              if m.areaCoords and startArea then
+                m.areaCoords[startArea] = m.areaCoords[startArea] or {}
+                m.areaCoords[startArea][nx .. "," .. ny .. "," .. nz] = true
+              end
+            end
+            moved = moved + 1
+            if moved &gt;= LIMIT then break end
+            queue[#queue + 1] = dest
+          end
+        end
+      end
+    end
+  end
+  if icesus and icesus.mapper and icesus.mapper.noteDirty then icesus.mapper.noteDirty() end
+  if moved &gt;= LIMIT then
+    warn("relayout: moved %d rooms (hit the %d cap -- this floor likely connects widely).", moved, LIMIT)
+  else
+    say("relayout: tidied %d rooms on this floor.", moved)
+  end
+end
+
+-- ---- room-line annotation ----------------------------------------------
+-- Append hidden exits into the game's own room-exits line, e.g.
+--   A barren clearing in the forest (ne and nw and down for 'enter crack')
+-- with the command word in the game's special-exit colour (bright green).
+local DIRWORDS = {}
+for long, short in pairs(SHORT) do DIRWORDS[long] = true; DIRWORDS[short] = true end
+
+-- Is this parenthetical the current room's own exit line? (Its direction tokens
+-- must cover every cardinal exit the room reports — filters "Street lamp
+-- (glowing)" and mistimed lines.)
+local function isRoomExitLine(exits)
+  local r = gmcp and gmcp.Room and gmcp.Room.Info
+  if type(r) ~= "table" or type(r.exits) ~= "table" then return false end
+  local toks = {}
+  for w in exits:lower():gmatch("[a-z]+") do if DIRWORDS[w] then toks[w] = true end end
+  if not next(toks) then return false end
+  for dir in pairs(r.exits) do
+    local long = igoto.DIR[dir] or dir
+    if SHORT[long] then                       -- a real compass/vertical exit
+      if not (toks[long] or toks[SHORT[long]]) then return false end
+    end
+  end
+  return true
+end
+
+function igoto.annotateLine()
+  if not igoto.annotate then return end
+  local hex = curHex()
+  local list = hex and igoto.links[hex]
+  if not (list and #list &gt; 0) then return end
+  local exits = matches and matches[3]
+  if not exits or not isRoomExitLine(exits) then return end
+  local parts = {}
+  for _, lk in ipairs(list) do
+    parts[#parts + 1] = (lk.dir and (lk.dir .. " for ") or "") .. "'" .. lk.cmd .. "'"
+  end
+  local add = " and " .. table.concat(parts, " and ")
+  -- selectCaptureGroup(N) maps to matches[N]: 1=whole line, 2=room name,
+  -- 3=exits. So the exits are group 3 (verified headless on Mudlet 4.22).
+  if (selectCaptureGroup(3) or 0) &gt; 0 then
+    local er, eg, eb = getFgColor()
+    replace(exits .. add)
+    if (selectString(exits .. add, 1) or -1) &gt; 0 then
+      setFgColor(er or 0, eg or 128, eb or 128)
+    end
+    local c = igoto.LINK_CMD_COLOR
+    for _, lk in ipairs(list) do
+      if (selectString(lk.cmd, 1) or -1) &gt; 0 then setFgColor(c[1], c[2], c[3]) end
+    end
+  end
+end
+
+-- One-shot dump of what the walker sees in the current room -- use it if
+-- road-walk still won't trigger, and send me the output.
+function igoto.debug()
+  local r = gmcp and gmcp.Room and gmcp.Room.Info
+  local id, hex = igoto.currentRoom()
+  local env = (id and getRoomEnv) and getRoomEnv(id) or nil
+  cecho("&lt;sea_green&gt;goto debug:&lt;reset&gt;\n")
+  cecho(string.format("  hex=%s  env=%s\n  map: %s\n",
+    tostring(hex), tostring(env), id and roomPos(id) or "not on map"))
+  cecho(string.format("  prevHex=%s  adjacent=%s annotate=%s\n",
+    tostring(igoto._prevHex), tostring(igoto.adjacent), tostring(igoto.annotate)))
+  if r then
+    cecho(string.format("  name='%s'\n  area='%s'  terrain='%s'\n",
+      tostring(r.name), tostring(r.area), tostring(r.terrain)))
+    cecho(string.format("  coords=%s  x=%s  y=%s\n",
+      type(r.coords) == "table" and ("{" .. table.concat(r.coords, ",") .. "}") or tostring(r.coords),
+      tostring(r.x), tostring(r.y)))
+  else
+    cecho("  gmcp.Room.Info is nil\n")
+  end
+  cecho(string.format("  onRoad=%s  inOutworld=%s\n",
+    tostring(onRoad()), tostring(inOutworld())))
+  if id and getRoomExits then
+    local ok, ex = pcall(getRoomExits, id)
+    if ok and type(ex) == "table" then
+      for dir, dest in pairs(ex) do
+        cecho(string.format("  exit %-9s -&gt; %s\n", dir, roomPos(dest)))
+      end
+    end
+  end
+end
+
+-- ---- command dispatch --------------------------------------------------
+function igoto.help()
+  cecho([[&lt;sea_green&gt;Icesus Goto&lt;reset&gt; -- travel + room nicknames
+  &lt;cyan&gt;goto &lt;dest&gt;&lt;reset&gt;    walk to a nickname, room number, or room name
+  &lt;cyan&gt;goto stop&lt;reset&gt;      stop walking now
+  &lt;cyan&gt;goto reweigh&lt;reset&gt;   weight the whole map from terrain (run once after install)
+  &lt;cyan&gt;goto planelock on|off&lt;reset&gt; keep rooms on the right floor (z), leave x/y to the mapper
+  &lt;cyan&gt;goto annotate on|off&lt;reset&gt;  show hidden exits inside the room's exit line
+  &lt;cyan&gt;goto reroute on|off&lt;reset&gt;   typing a hidden exit's map-dir sends its phrase
+  &lt;cyan&gt;goto relayout&lt;reset&gt;    tidy the CURRENT FLOOR around you (lay rooms out adjacent)
+  &lt;cyan&gt;goto trace&lt;reset&gt;     toggle per-step decisions (road-walk vs step) on/off
+  &lt;cyan&gt;goto debug&lt;reset&gt;     print what the walker sees in this room
+  &lt;cyan&gt;goto help&lt;reset&gt;      this help
+  &lt;cyan&gt;rnick &lt;name&gt;&lt;reset&gt;   save the room you're in as &lt;name&gt;
+  &lt;cyan&gt;rnick list&lt;reset&gt;     list saved nicknames
+  &lt;cyan&gt;rnick del &lt;name&gt;&lt;reset&gt;  forget a nickname
+  &lt;cyan&gt;hlink &lt;phrase&gt;&lt;reset&gt;       record a hidden exit: sends &lt;phrase&gt;, links this
+                       room to the one you land in (goto can then use it)
+  &lt;cyan&gt;hlink &lt;dir&gt; &lt;phrase&gt;&lt;reset&gt; same, and place the far room to &lt;dir&gt; on the map
+  &lt;cyan&gt;hlink list&lt;reset&gt; / &lt;cyan&gt;hlink del &lt;phrase&gt;&lt;reset&gt;
+  &lt;cyan&gt;goto danger&lt;reset&gt;    flag current room as dangerous (goto avoids it; uses it only as last resort)
+  &lt;cyan&gt;goto safe&lt;reset&gt;      remove the flag from the current room
+  &lt;cyan&gt;goto danger list&lt;reset&gt;  list all flagged rooms
+  short forms: &lt;cyan&gt;gt&lt;reset&gt; = goto, &lt;cyan&gt;rn&lt;reset&gt; = rnick, &lt;cyan&gt;hl&lt;reset&gt; = hlink, &lt;cyan&gt;rd&lt;reset&gt; = room danger
+]])
+end
+
+function igoto.cmd(arg)
+  arg = trim(arg)
+  local lower = arg:lower()
+  if arg == "" or lower == "help" then igoto.help() return end
+  if lower == "stop" then igoto.stop() return end
+  if lower == "reweigh" or lower == "reweight" then igoto.reweighAll() return end
+  if lower == "relayout" or lower == "tidy" then igoto.relayout() return end
+  local key, rest = arg:match("^(%S+)%s*(.*)$")
+  key = key and key:lower()
+  if key == "adjacent" or key == "planelock" or key == "annotate" or key == "reroute" then
+    local skey = (key == "planelock") and "adjacent" or key   -- planelock stored as `adjacent`
+    local val = (rest or ""):lower()
+    if val == "on" or val == "off" then igoto[skey] = (val == "on")
+    else igoto[skey] = not igoto[skey] end
+    igoto.saveSettings()
+    say("%s: %s", key, igoto[skey] and "ON" or "OFF")
+    return
+  end
+  if lower == "danger" or lower == "mark danger" then igoto.dangerMark() return end
+  if lower == "safe"  or lower == "unmark" or lower == "undanger" then igoto.dangerUnmark() return end
+  if lower == "danger list" or lower == "danger ls" then igoto.dangerList() return end
+  if lower == "debug" then igoto.debug() return end
+  if lower == "trace" then
+    igoto.trace = not igoto.trace
+    say("per-step trace %s.", igoto.trace and "ON" or "OFF")
+    return
+  end
+  local id, err, label, handled = igoto.resolve(arg)
+  if not id then
+    if not handled and err then warn("%s.", err) end
+    return
+  end
+  igoto.start(id, label)
+end
+
+function igoto.nick(arg)
+  arg = trim(arg)
+  local sub, rest = arg:match("^(%S+)%s*(.*)$")
+  sub = (sub or ""):lower()
+  if sub == "" or sub == "list" then igoto.nickList() return end
+  if sub == "del" or sub == "rm" or sub == "delete" then igoto.nickDel(rest) return end
+  if sub == "go" or sub == "goto" then igoto.cmd(rest) return end
+  igoto.nickAdd(arg)                          -- whole arg is the nickname
+end
+
+-- rd [del|list]  — shorthand for "goto danger/safe/list"
+function igoto.rd(arg)
+  arg = trim(arg or ""):lower()
+  if arg == "" or arg == "mark" then igoto.dangerMark()
+  elseif arg == "del" or arg == "rm" or arg == "unmark" or arg == "clear" or arg == "safe" then
+    igoto.dangerUnmark()
+  elseif arg == "list" or arg == "ls" then igoto.dangerList()
+  else warn("usage: rd [del|list]  (mark/unmark current room as dangerous)") end
+end
+
+-- ---- boot --------------------------------------------------------------
+-- Runs on install and on every profile load. Re-register cleanly so a
+-- reload never stacks duplicate handlers.
+if igoto._roomHandler and killAnonymousEventHandler then
+  pcall(killAnonymousEventHandler, igoto._roomHandler)
+end
+if registerAnonymousEventHandler then
+  igoto._roomHandler = registerAnonymousEventHandler("gmcp.Room.Info", "igoto.onRoomEvent")
+  if igoto._sendHandler then pcall(killAnonymousEventHandler, igoto._sendHandler) end
+  igoto._sendHandler = registerAnonymousEventHandler("sysDataSendRequest", "igoto.onSend")
+end
+
+-- Movement triggers: read Icesus's own lines so a road-walk advances the
+-- instant it ends, rather than waiting on a timer. They no-op unless a goto
+-- road-walk is in progress. Re-created cleanly on every reload.
+local function regTrig(slot, regex, fn)
+  if igoto[slot] and killTrigger then pcall(killTrigger, igoto[slot]) end
+  igoto[slot] = nil
+  if tempRegexTrigger then
+    local ok, id = pcall(tempRegexTrigger, regex, fn)
+    if ok then igoto[slot] = id end
+  end
+end
+regTrig("_trigStop",   [[^You stop walking ]],
+        function() igoto.onStopWalk() end)
+regTrig("_trigRefuse", [[^As there is different terrain to .+ you stand still]],
+        function() igoto.onRefused() end)
+regTrig("_trigRoomLine", [[^(.+) \(([^()]+)\)\s*$]],
+        function() igoto.annotateLine() end)
+
+igoto.loadSettings()
+igoto.loadNicks()
+igoto.loadLinks()
+igoto.applyLinks()   -- best-effort; per-visit reapply covers the rest
+igoto.loadDanger()
+igoto.applyDanger()  -- stamp high weights onto danger rooms after map loads
+</script>
+					<eventHandlerList />
+				</Script>
+			</ScriptGroup>
+		</ScriptGroup>
+	</ScriptPackage>
+	<KeyPackage />
+</MudletPackage>

@@ -1,0 +1,1934 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+	<TriggerPackage>
+		<TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+			<name>Elemental Bonds</name><script></script><triggerType>0</triggerType>
+			<conditonLineDelta>0</conditonLineDelta><mStayOpen>0</mStayOpen><mCommand></mCommand>
+			<packageName></packageName><mFgColor>#ff0000</mFgColor><mBgColor>#ffff00</mBgColor>
+			<mSoundFile></mSoundFile><colorTriggerFgColor>#000000</colorTriggerFgColor>
+			<colorTriggerBgColor>#000000</colorTriggerBgColor>
+			<regexCodeList /><regexCodePropertyList />
+		<Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+			<name>Bond - element line</name>
+			<script>bond.readElementLine(matches[2], matches[3], matches[4], matches[5])</script>
+			<triggerType>1</triggerType>
+			<conditonLineDelta>0</conditonLineDelta>
+			<mStayOpen>0</mStayOpen>
+			<mCommand></mCommand>
+			<packageName></packageName>
+			<mFgColor>#ff0000</mFgColor>
+			<mBgColor>#ffff00</mBgColor>
+			<mSoundFile></mSoundFile>
+			<colorTriggerFgColor>#000000</colorTriggerFgColor>
+			<colorTriggerBgColor>#000000</colorTriggerBgColor>
+			<regexCodeList><string>^(AIR|WATER|FIRE|EARTH)\s*:\s*(\d+)\s*:\s*(\d+)\s*:\s*([+-]?\d+)</string></regexCodeList>
+			<regexCodePropertyList><integer>1</integer></regexCodePropertyList>
+		</Trigger>
+		<Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+			<name>Bond - element table header (gag when quiet)</name>
+			<script>bond.gagIfQuiet()</script>
+			<triggerType>1</triggerType>
+			<conditonLineDelta>0</conditonLineDelta>
+			<mStayOpen>0</mStayOpen>
+			<mCommand></mCommand>
+			<packageName></packageName>
+			<mFgColor>#ff0000</mFgColor>
+			<mBgColor>#ffff00</mBgColor>
+			<mSoundFile></mSoundFile>
+			<colorTriggerFgColor>#000000</colorTriggerFgColor>
+			<colorTriggerBgColor>#000000</colorTriggerBgColor>
+			<regexCodeList><string>^Element \| bond strength \| bond load \| resulting drain \|</string></regexCodeList>
+			<regexCodePropertyList><integer>1</integer></regexCodePropertyList>
+		</Trigger>
+		<Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+			<name>Bond - channel flow</name>
+			<script>bond.learnEff(matches[2], matches[3])</script>
+			<triggerType>1</triggerType>
+			<conditonLineDelta>0</conditonLineDelta>
+			<mStayOpen>0</mStayOpen>
+			<mCommand></mCommand>
+			<packageName></packageName>
+			<mFgColor>#ff0000</mFgColor>
+			<mBgColor>#ffff00</mBgColor>
+			<mSoundFile></mSoundFile>
+			<colorTriggerFgColor>#000000</colorTriggerFgColor>
+			<colorTriggerBgColor>#000000</colorTriggerBgColor>
+			<regexCodeList><string>^You channel (\d+) units of \w+ energy into \w+, resulting in a flow of (\d+) units</string></regexCodeList>
+			<regexCodePropertyList><integer>1</integer></regexCodePropertyList>
+		</Trigger>
+		<Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+			<name>Bond - active spell line</name>
+			<script>bond.parseSpellLine(matches[2], matches[3])</script>
+			<triggerType>1</triggerType>
+			<conditonLineDelta>0</conditonLineDelta>
+			<mStayOpen>0</mStayOpen>
+			<mCommand></mCommand>
+			<packageName></packageName>
+			<mFgColor>#ff0000</mFgColor>
+			<mBgColor>#ffff00</mBgColor>
+			<mSoundFile></mSoundFile>
+			<colorTriggerFgColor>#000000</colorTriggerFgColor>
+			<colorTriggerBgColor>#000000</colorTriggerBgColor>
+			<regexCodeList><string>^&lt;(fire|air|water|earth|combined)&gt;\s*:\s*(.+)$</string></regexCodeList>
+			<regexCodePropertyList><integer>1</integer></regexCodePropertyList>
+		</Trigger>
+		<Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+			<name>Bond - spell wrap continuation (gag when quiet)</name>
+			<script>bond.gagIfQuiet()</script>
+			<triggerType>1</triggerType>
+			<conditonLineDelta>0</conditonLineDelta>
+			<mStayOpen>0</mStayOpen>
+			<mCommand></mCommand>
+			<packageName></packageName>
+			<mFgColor>#ff0000</mFgColor>
+			<mBgColor>#ffff00</mBgColor>
+			<mSoundFile></mSoundFile>
+			<colorTriggerFgColor>#000000</colorTriggerFgColor>
+			<colorTriggerBgColor>#000000</colorTriggerBgColor>
+			<regexCodeList><string>^&lt;[a-z][a-z ]+glow&gt;\s*&lt;\d+m?(?:\s*\d+s)?&gt;\.?\s*$</string></regexCodeList>
+			<regexCodePropertyList><integer>1</integer></regexCodePropertyList>
+		</Trigger>
+		<Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+			<name>Bond - no spells operative</name>
+			<script>bond.clearBuffs()</script>
+			<triggerType>1</triggerType>
+			<conditonLineDelta>0</conditonLineDelta>
+			<mStayOpen>0</mStayOpen>
+			<mCommand></mCommand>
+			<packageName></packageName>
+			<mFgColor>#ff0000</mFgColor>
+			<mBgColor>#ffff00</mBgColor>
+			<mSoundFile></mSoundFile>
+			<colorTriggerFgColor>#000000</colorTriggerFgColor>
+			<colorTriggerBgColor>#000000</colorTriggerBgColor>
+			<regexCodeList><string>^No element spells are operative\.</string></regexCodeList>
+			<regexCodePropertyList><integer>1</integer></regexCodePropertyList>
+		</Trigger>
+		<Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+			<name>Bond - spell ended</name>
+			<script>bond.endedSpell(matches[2])</script>
+			<triggerType>1</triggerType>
+			<conditonLineDelta>0</conditonLineDelta>
+			<mStayOpen>0</mStayOpen>
+			<mCommand></mCommand>
+			<packageName></packageName>
+			<mFgColor>#ff0000</mFgColor>
+			<mBgColor>#ffff00</mBgColor>
+			<mSoundFile></mSoundFile>
+			<colorTriggerFgColor>#000000</colorTriggerFgColor>
+			<colorTriggerBgColor>#000000</colorTriggerBgColor>
+			<regexCodeList><string>^You stop the flow of elemental energy into your (.+?)\.?$</string></regexCodeList>
+			<regexCodePropertyList><integer>1</integer></regexCodePropertyList>
+		</Trigger>
+		<Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+			<name>Bond - all spells ended</name>
+			<script>bond.endedAll()</script>
+			<triggerType>1</triggerType>
+			<conditonLineDelta>0</conditonLineDelta>
+			<mStayOpen>0</mStayOpen>
+			<mCommand></mCommand>
+			<packageName></packageName>
+			<mFgColor>#ff0000</mFgColor>
+			<mBgColor>#ffff00</mBgColor>
+			<mSoundFile></mSoundFile>
+			<colorTriggerFgColor>#000000</colorTriggerFgColor>
+			<colorTriggerBgColor>#000000</colorTriggerBgColor>
+			<regexCodeList><string>^You stop the flow of elemental energy into all of your active spells\.</string></regexCodeList>
+			<regexCodePropertyList><integer>1</integer></regexCodePropertyList>
+		</Trigger>
+		</TriggerGroup>
+	</TriggerPackage>
+	<TimerPackage />
+	<AliasPackage>
+		<AliasGroup isActive="yes" isFolder="yes">
+			<name>Elemental Bonds</name><script></script><command></command>
+			<packageName></packageName><regex></regex>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - refresh element table (tcle)</name>
+			<script>send("templar_command list elements")</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^tcle$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - refresh active spells (tcla)</name>
+			<script>send("templar_command list all")</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^tcla$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - set maximums (setmax)</name>
+			<script>bond.setMax()</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^setmax$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - auto balance to max (bal)</name>
+			<script>bond.balance()</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^bal$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - tick-convergence balance (rbal)</name>
+			<script>bond.rbalance()</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^rbal$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - rbal dry run (rbal?)</name>
+			<script>bond.rbalance({dryrun=true})</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^rbal\?$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - manual channel (chan)</name>
+			<script>bond.channel(matches[2], matches[3], matches[4])</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^chan\s+(\d+)\s+(\w+)\s+(?:to\s+)?(\w+)$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - change element (chg)</name>
+			<script>bond.change(matches[2], matches[3])</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^chg\s+(\w+)\s+(?:to\s+)?(\w+)$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - end all buffs (endbuffs)</name>
+			<script>bond.endAll()</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^endbuffs$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - end one buff by name (endbuff)</name>
+			<script>bond.endNamed(matches[2])</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^endbuff\s+(.+)$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - end all except protected (keepfaith)</name>
+			<script>bond.endExceptProtected()</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^keepfaith$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - protect a spell (keepalso)</name>
+			<script>bond.keepAlso(matches[2])</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^keepalso\s+(.+)$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - unprotect a spell (keepnot)</name>
+			<script>bond.keepNot(matches[2])</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^keepnot\s+(.+)$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - status overview (bonds)</name>
+			<script>bond.status(matches[2])</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^bonds(?:\s+(\w+))?$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - buff panel control (buffbar)</name>
+			<script>if not (bond and bond.ui) then
+  cecho("\n&lt;red&gt;[bond] script not loaded — check the Errors view.&lt;reset&gt;\n")
+else
+  local a = matches[2] and matches[2]:lower() or ""
+  if a == "off" or a == "hide" then bond.ui.hide()
+  elseif a == "reset" then bond.ui.reset()
+  elseif a == "where" or a == "debug" then bond.ui.where()
+  elseif a == "width" then bond.ui.setWidth(matches[3])
+  elseif a == "meters" or a == "anim" then bond.ui.toggleMeters()
+  else bond.ui.show() end
+end</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^buffbar(?:\s+(\w+))?(?:\s+(\d+))?$</regex>
+		</Alias>
+		<Alias isActive="yes" isFolder="no">
+			<name>Bond - help (bondhelp)</name>
+			<script>cecho("\n&lt;cyan&gt;[bond] Templar Elemental Bond Manager&lt;reset&gt;\n")
+cecho("  &lt;yellow&gt;bonds&lt;reset&gt;        - refresh data quietly, then show status\n")
+cecho("  &lt;yellow&gt;bonds maxima&lt;reset&gt;  - show just recorded maxima\n")
+cecho("  &lt;yellow&gt;tcle / tcla&lt;reset&gt;   - refresh element table / active spell list\n")
+cecho("  &lt;yellow&gt;setmax&lt;reset&gt;       - record current strengths as your maxima\n")
+cecho("  &lt;yellow&gt;bal&lt;reset&gt;          - channel surplus to raise weakest bonds toward max\n")
+cecho("  &lt;yellow&gt;rbal&lt;reset&gt;         - channel to equalize time-to-max across gaining bonds\n")
+cecho("  &lt;yellow&gt;rbal?&lt;reset&gt;        - show the rbal plan without sending\n")
+cecho("  &lt;yellow&gt;chan n from to&lt;reset&gt;- manual channel (auto-routes counterparts)\n")
+cecho("  &lt;yellow&gt;chg spell elem&lt;reset&gt;- change a spell's element, e.g. chg tool air\n")
+cecho("  &lt;yellow&gt;endbuffs&lt;reset&gt;     - end ALL active buffs\n")
+cecho("  &lt;yellow&gt;endbuff name&lt;reset&gt;  - end ONE buff by name, e.g. endbuff hard\n")
+cecho("  &lt;yellow&gt;keepfaith&lt;reset&gt;    - end every buff EXCEPT Shield of Faith\n")
+cecho("  &lt;yellow&gt;keepalso / keepnot&lt;reset&gt; - add/remove from the protected list\n")
+cecho("  &lt;yellow&gt;buffbar&lt;reset&gt;      - show buff bar (also: off | reset | where | width N)\n")
+cecho("  &lt;grey&gt;  channeling: fire\xc3\x97water and earth\xc3\x97air blocked; auto-routed via intermediate&lt;reset&gt;\n")</script>
+			<command></command>
+			<packageName></packageName>
+			<regex>^bondhelp$</regex>
+		</Alias>
+		</AliasGroup>
+	</AliasPackage>
+	<ActionPackage />
+	<ScriptPackage>
+		<Script isActive="yes" isFolder="no">
+			<name>Elemental Bond Manager</name><packageName></packageName>
+			<script>-- =====================================================================
+-- Templar Elemental Bond Manager
+-- ---------------------------------------------------------------------
+-- Tracks the four elemental bonds (air/water/fire/earth), their current
+-- strength / load / drain, your recorded per-element maximums, your live
+-- active buffs (parsed from `templar_command list all`), and the measured
+-- channel efficiency so the auto-balancer knows how lossy channeling is.
+--
+-- Nothing here sends a command on its own except when you invoke an alias.
+-- =====================================================================
+
+bond = bond or {}
+
+bond.elements = { "air", "water", "fire", "earth" }
+
+-- Element label colors, matched to the game's own `list elements` output:
+--   air = cyan, water = blue, fire = red, earth = yellow (dim ANSI palette).
+-- "combined" buffs aren't an element row; show them in white.
+bond.elemColor = {
+  air = "cyan", water = "blue", fire = "red", earth = "yellow",
+  combined = "white",
+}
+function bond.col(e)
+  return bond.elemColor[(e or ""):lower()] or "white"
+end
+
+-- Current readings from `list elements`: bond.cur.fire = {strength, load, drain}
+bond.cur = bond.cur or {}
+
+-- Recorded maximums (captured manually via `setmax`).
+bond.max = bond.max or {}
+
+-- Active buffs, keyed by lowercased spell name.
+--   bond.buffs["armourplate on direkein"] = { name=&lt;original case&gt;, element="combined", expires=&lt;os.time&gt;, dur="11m 16s" }
+bond.buffs = bond.buffs or {}
+
+-- Measured channel efficiency (flow / requested). Learned from the
+-- "resulting in a flow of N units" line. Seeded with a sane default.
+bond.eff = bond.eff or 0.68
+
+-- Spells we never want auto-ended.
+bond.protected = bond.protected or { ["shield of faith"] = true }
+
+-- guild command prefix
+bond.cmd = "templar_command"
+
+-- ---------------------------------------------------------------------
+-- small helpers
+-- ---------------------------------------------------------------------
+local function trim(s) return (s:gsub("^%s+", ""):gsub("%s+$", "")) end
+
+function bond.have_all_max()
+  for _, e in ipairs(bond.elements) do
+    if not bond.max[e] then return false end
+  end
+  return true
+end
+
+-- =====================================================================
+-- 1. READING THE ELEMENTS TABLE
+-- ---------------------------------------------------------------------
+-- Lines look like:  FIRE    :     1618      :     38    :        -2       :
+-- Trigger pattern (PCRE): ^(AIR|WATER|FIRE|EARTH)\s*:\s*(\d+)\s*:\s*(\d+)\s*:\s*([+-]?\d+)
+-- which calls bond.readElementLine(matches[2], matches[3], matches[4], matches[5])
+-- =====================================================================
+function bond.readElementLine(elem, strength, load, drain)
+  local e = elem:lower()
+  bond.cur[e] = {
+    strength = tonumber(strength),
+    load     = tonumber(load),
+    drain    = tonumber(drain),
+  }
+  if bond.quiet then deleteLine() end
+end
+
+-- =====================================================================
+-- 2. CAPTURING MAXIMUMS  (alias: setmax)
+-- ---------------------------------------------------------------------
+-- We can't just read "strength at zero load" because buffs are usually up.
+-- Instead we reconstruct the unloaded ceiling from what's on screen:
+--   true_max ~= current_strength + load          (load is the per-tick pull)
+-- but the cleaner signal the game gives is the `resulting drain` column,
+-- which already nets flow minus load. The most robust capture is simply:
+-- take the current strength and ADD BACK the load, since with no buffs the
+-- bond settles at strength where drain hits 0. We store the highest we see.
+--
+-- Because you only run this judiciously (ideally with buffs down, or with a
+-- known buff set), `setmax` records exactly what's on screen as the ceiling.
+-- =====================================================================
+function bond.setMax()
+  if not next(bond.cur) then
+    cecho("\n&lt;red&gt;[bond]&lt;reset&gt; No element data yet. Run 'tcle' first, then 'setmax'.\n")
+    return
+  end
+
+  -- The displayed strength already IS the ceiling; load is a separate
+  -- per-tick figure, not a deduction from it. The reliable capture moment is
+  -- when load is 0 (all buffs down), where strength == true max. If load is
+  -- non-zero we still record the displayed strength but flag it as a floor,
+  -- because active buffs can suppress the displayed value below the real max.
+  local anyLoaded = false
+  for _, e in ipairs(bond.elements) do
+    local c = bond.cur[e]
+    if c and (c.load or 0) &gt; 0 then anyLoaded = true end
+  end
+
+  if anyLoaded then
+    cecho("\n&lt;yellow&gt;[bond]&lt;reset&gt; Note: some bonds show load &amp;gt; 0 (buffs active).\n")
+    cecho("&lt;yellow&gt;[bond]&lt;reset&gt; For a clean max, run 'endbuffs', wait for load to hit 0, then 'setmax'.\n")
+    cecho("&lt;yellow&gt;[bond]&lt;reset&gt; Recording current strengths anyway (treat as a lower bound):\n")
+  else
+    cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; Recording zero-load bond strengths as maximums:\n")
+  end
+
+  for _, e in ipairs(bond.elements) do
+    local c = bond.cur[e]
+    if c then
+      bond.max[e] = c.strength
+      cecho(string.format("    &lt;yellow&gt;%-5s&lt;reset&gt; max = &lt;green&gt;%d&lt;reset&gt;%s\n",
+            e:upper(), c.strength,
+            (c.load or 0) &gt; 0 and string.format("  &lt;grey&gt;(load %d \226\137\160 0)&lt;reset&gt;", c.load) or ""))
+    end
+  end
+  cecho("&lt;cyan&gt;[bond]&lt;reset&gt; Maximums stored. The balancer will aim for these.\n")
+end
+
+-- =====================================================================
+-- 3. CHANNEL EFFICIENCY LEARNING
+-- ---------------------------------------------------------------------
+-- Line: You channel 150 units of fire energy into earth, resulting in a flow of 106 units.
+-- Pattern: ^You channel (\d+) units of \w+ energy into \w+, resulting in a flow of (\d+) units
+-- =====================================================================
+function bond.learnEff(requested, flow)
+  requested, flow = tonumber(requested), tonumber(flow)
+  if requested and requested &gt; 0 and flow then
+    local r = flow / requested
+    -- light smoothing so one odd reading doesn't dominate
+    bond.eff = (bond.eff * 0.5) + (r * 0.5)
+  end
+end
+
+-- =====================================================================
+-- 4. MANUAL CHANNEL SHORTCUT  (alias: chan &lt;n&gt; &lt;from&gt; &lt;to&gt;)
+-- =====================================================================
+local elemAlias = {
+  a="air", air="air", w="water", wat="water", water="water",
+  f="fire", fire="fire", e="earth", ear="earth", earth="earth",
+}
+function bond.resolveElem(x)
+  if not x then return nil end
+  return elemAlias[x:lower()]
+end
+
+-- Channeling adjacency: a bond cannot channel to itself or to its elemental
+-- counterpart. The counterparts (opposites) are fire&lt;-&gt;water and earth&lt;-&gt;air.
+-- So the only BLOCKED pairs are {fire,water} and {earth,air}; every other
+-- pair is a legal direct channel.
+bond.opposite = {
+  fire  = "water",
+  water = "fire",
+  earth = "air",
+  air   = "earth",
+}
+
+function bond.canChannel(from, to)
+  if from == to then return false end
+  if bond.opposite[from] == to then return false end
+  return true
+end
+
+-- For a blocked (counterpart) pair, find a legal intermediate bond that is
+-- adjacent to BOTH from and to. e.g. fire-&gt;water can go via air or earth.
+-- Returns the intermediate element name, or nil if none (shouldn't happen
+-- with 4 elements, but guarded).
+function bond.intermediateFor(from, to)
+  for _, mid in ipairs(bond.elements) do
+    if mid ~= from and mid ~= to
+       and bond.canChannel(from, mid) and bond.canChannel(mid, to) then
+      return mid
+    end
+  end
+  return nil
+end
+
+-- Append channel step(s) to a plan to move energy from `from` to `to`, given
+-- a desired DELIVERED flow at the destination. Returns the donor cost (units
+-- the source loses). Handles the counterpart case by routing through an
+-- intermediate, where efficiency applies twice.
+--   plan entries: { n = requested_units, from = e, to = e, flow = delivered }
+-- For a two-hop, two entries are appended and the second is tagged via=mid.
+function bond.emitChannel(plan, from, to, deliveredFlow, eff)
+  if deliveredFlow &lt; 1 then return 0 end
+  if bond.canChannel(from, to) then
+    local requested = math.floor(deliveredFlow / eff)
+    if requested &lt; 1 then return 0 end
+    local flow = math.floor(requested * eff)
+    plan[#plan+1] = { n = requested, from = from, to = to, flow = flow }
+    return requested            -- donor loses 'requested'
+  end
+  -- counterpart: route via intermediate, efficiency twice
+  local mid = bond.intermediateFor(from, to)
+  if not mid then return 0 end
+  -- to deliver 'deliveredFlow' at 'to', the mid must send deliveredFlow/eff,
+  -- and 'from' must send (deliveredFlow/eff)/eff.
+  local midSend   = math.floor(deliveredFlow / eff)        -- units leaving mid
+  local fromSend  = math.floor(midSend / eff)              -- units leaving from
+  if fromSend &lt; 1 or midSend &lt; 1 then return 0 end
+  local arriveMid = math.floor(fromSend * eff)             -- units arriving at mid
+  local arriveTo  = math.floor(arriveMid * eff)            -- units arriving at to
+  plan[#plan+1] = { n = fromSend,  from = from, to = mid, flow = arriveMid }
+  plan[#plan+1] = { n = arriveMid, from = mid,  to = to,  flow = arriveTo, via = true }
+  return fromSend             -- donor (from) loses 'fromSend'
+end
+
+function bond.channel(n, from, to)
+  from, to = bond.resolveElem(from), bond.resolveElem(to)
+  n = tonumber(n)
+  if not (n and from and to) then
+    cecho("\n&lt;red&gt;[bond]&lt;reset&gt; Usage: chan &lt;amount&gt; &lt;from&gt; &lt;to&gt;  (e.g. chan 100 fire earth)\n")
+    return
+  end
+  if from == to then
+    cecho("\n&lt;red&gt;[bond]&lt;reset&gt; Source and target element are the same.\n")
+    return
+  end
+  if bond.canChannel(from, to) then
+    send(bond.cmd .. " channel " .. n .. " " .. from .. " to " .. to)
+    return
+  end
+  -- Blocked counterpart pair: route through an intermediate (two hops). The
+  -- flow is multiplied by efficiency TWICE, so we tell the user what to expect.
+  local mid = bond.intermediateFor(from, to)
+  if not mid then
+    cecho("\n&lt;red&gt;[bond]&lt;reset&gt; " .. from .. " cannot channel to " .. to ..
+          " (counterparts) and no route was found.\n")
+    return
+  end
+  local eff = (bond.eff and bond.eff &gt; 0.05) and bond.eff or 0.68
+  local arriving = math.floor(n * eff * eff)
+  cecho(string.format("\n&lt;yellow&gt;[bond]&lt;reset&gt; %s and %s are counterparts (no direct channel). " ..
+        "Routing via &lt;yellow&gt;%s&lt;reset&gt;: %d \226\134\146 %s \226\134\146 %s (~%d arriving after two hops).\n",
+        from, to, mid, n, mid, to, arriving))
+  send(bond.cmd .. " channel " .. n .. " " .. from .. " to " .. mid)
+  tempTimer(0.4, function()
+    send(bond.cmd .. " channel " .. n .. " " .. mid .. " to " .. to)
+  end)
+end
+
+
+-- =====================================================================
+-- 4b. CHANGE SHORTCUT  (alias: chg &lt;spell&gt; &lt;element&gt;)
+-- ---------------------------------------------------------------------
+-- Only 'element barrier' and 'tool of elemental justice' are changeable.
+-- 'chg barrier earth'  -&gt;  templar_command change element barrier to earth
+-- 'chg tool air'       -&gt;  templar_command change tool of elemental justice to air
+-- We also optimistically update the tracked buff's element locally so the
+-- 'bonds' display reflects the change immediately (the game's confirmation
+-- line "draw upon the power of X" doesn't say which spell changed, so we
+-- trust the spell we just targeted).
+-- =====================================================================
+local changeable = {
+  barrier = { full = "element barrier",            keys = { "element barrier" } },
+  tool    = { full = "tool of elemental justice",  keys = { "tool of elemental justice" } },
+  -- a couple of forgiving aliases
+  b       = { full = "element barrier",            keys = { "element barrier" } },
+  t       = { full = "tool of elemental justice",  keys = { "tool of elemental justice" } },
+}
+
+function bond.change(which, elem)
+  local spec = which and changeable[which:lower()]
+  elem = bond.resolveElem(elem)
+  if not (spec and elem) then
+    cecho("\n&lt;red&gt;[bond]&lt;reset&gt; Usage: chg &lt;barrier|tool&gt; &lt;element&gt;  (e.g. chg barrier earth)\n")
+    cecho("&lt;grey&gt;[bond] Only 'element barrier' and 'tool of elemental justice' can be changed.&lt;reset&gt;\n")
+    return
+  end
+  send(bond.cmd .. " change " .. spec.full .. " to " .. elem)
+  -- optimistic local update of tracked element
+  for _, k in ipairs(spec.keys) do
+    if bond.buffs[k] then
+      bond.buffs[k].element = elem
+    end
+  end
+  cecho(string.format("\n&lt;cyan&gt;[bond]&lt;reset&gt; Changing &lt;yellow&gt;%s&lt;reset&gt; to draw from &lt;yellow&gt;%s&lt;reset&gt;.\n",
+        spec.full, elem))
+end
+
+-- =====================================================================
+-- 5. AUTO-BALANCE  (alias: tcbal)
+-- ---------------------------------------------------------------------
+-- Goal: raise the weakest bonds toward their recorded max by channeling
+-- surplus out of the strongest bonds. We measure each bond's deficit
+-- (max - strength). Donors are bonds at/near max; receivers are the ones
+-- furthest below. We size each channel by the *requested* amount needed,
+-- grossing up for the lossy flow (requested = needed / efficiency), and we
+-- never pull a donor below its own max minus what it can spare.
+-- =====================================================================
+function bond.balance(opts)
+  opts = opts or {}
+  local dryrun = opts.dryrun
+
+  if not bond.have_all_max() then
+    cecho("\n&lt;red&gt;[bond]&lt;reset&gt; Maximums not set for all elements. Run 'setmax' first.\n")
+    return
+  end
+  if not next(bond.cur) then
+    cecho("\n&lt;red&gt;[bond]&lt;reset&gt; No current element data. Run 'tcle' then try again.\n")
+    return
+  end
+
+  -- Build deficit / surplus lists.
+  local recv, donor = {}, {}
+  for _, e in ipairs(bond.elements) do
+    local c = bond.cur[e]
+    if c then
+      local deficit = bond.max[e] - c.strength
+      if deficit &gt; 20 then
+        recv[#recv+1] = { e = e, need = deficit }
+      elseif deficit &lt; -5 then
+        -- above recorded max (moon phase shifted it up): can donate the excess
+        donor[#donor+1] = { e = e, spare = -deficit + 0 }
+      end
+    end
+  end
+
+  -- If nothing is meaningfully above max, allow the strongest in-range bonds
+  -- to act as donors down to a floor, so we can still even things out.
+  if #donor == 0 then
+    -- rank bonds by headroom above their own "comfortable" level (90% of max)
+    for _, e in ipairs(bond.elements) do
+      local c = bond.cur[e]
+      if c then
+        local floor = bond.max[e] * 0.90
+        if c.strength &gt; floor then
+          donor[#donor+1] = { e = e, spare = c.strength - floor }
+        end
+      end
+    end
+  end
+
+  table.sort(recv,  function(a,b) return a.need  &gt; b.need  end)
+  table.sort(donor, function(a,b) return a.spare &gt; b.spare end)
+
+  if #recv == 0 then
+    cecho("\n&lt;green&gt;[bond]&lt;reset&gt; All bonds within ~20 of their max. Nothing to balance.\n")
+    return
+  end
+  if #donor == 0 then
+    cecho("\n&lt;yellow&gt;[bond]&lt;reset&gt; Bonds are low but no donor has spare strength. " ..
+          "Consider ending a buff instead.\n")
+    return
+  end
+
+  local eff = (bond.eff and bond.eff &gt; 0.05) and bond.eff or 0.68
+  local plan = {}
+
+  local di = 1
+  for _, r in ipairs(recv) do
+    local needFlow = r.need
+    while needFlow &gt; 10 and di &lt;= #donor do
+      local d = donor[di]
+      if d.spare &lt;= 10 then di = di + 1
+      else
+        -- desired delivered flow this step, limited by donor spare. For a
+        -- direct hop the donor loses ~flow/eff; for a two-hop ~flow/eff^2.
+        -- Cap the delivered amount so the donor's loss stays within its spare.
+        local twoHop = not bond.canChannel(d.e, r.e)
+        local effPow = twoHop and (eff * eff) or eff
+        local maxDeliverable = math.floor(d.spare * effPow)
+        local deliver = math.min(needFlow, maxDeliverable)
+        if deliver &lt; 5 then di = di + 1
+        else
+          local cost = bond.emitChannel(plan, d.e, r.e, deliver, eff)
+          if cost &lt;= 0 then di = di + 1
+          else
+            d.spare  = d.spare  - cost
+            needFlow = needFlow - deliver
+          end
+        end
+      end
+    end
+  end
+
+  if #plan == 0 then
+    cecho("\n&lt;yellow&gt;[bond]&lt;reset&gt; Couldn't build a useful channel plan (amounts too small).\n")
+    return
+  end
+
+  cecho(string.format("\n&lt;cyan&gt;[bond]&lt;reset&gt; Balance plan (efficiency ~%.0f%%):\n", eff*100))
+  for _, p in ipairs(plan) do
+    cecho(string.format("    channel &lt;yellow&gt;%d&lt;reset&gt; %s -&gt; %s  (~%d flow)%s\n",
+          p.n, p.from, p.to, p.flow, p.via and "  &lt;grey&gt;(via-hop)&lt;reset&gt;" or ""))
+  end
+
+  if dryrun then
+    cecho("&lt;grey&gt;[bond] dry run \226\128\148 nothing sent. Use 'bal' to execute.&lt;reset&gt;\n")
+    return
+  end
+
+  -- stagger the sends slightly so the game processes each cleanly
+  local delay = 0
+  for _, p in ipairs(plan) do
+    tempTimer(delay, function()
+      send(bond.cmd .. " channel " .. p.n .. " " .. p.from .. " to " .. p.to)
+    end)
+    delay = delay + 0.4
+  end
+  -- refresh the table afterwards
+  tempTimer(delay + 0.3, function() send(bond.cmd .. " list elements") end)
+end
+
+-- =====================================================================
+-- 5b. TICK-CONVERGENCE BALANCE  (alias: rbal)
+-- ---------------------------------------------------------------------
+-- Goal: make the four bonds reach their maximums at about the SAME time.
+-- "Time to max" for a bond = deficit / drain, where deficit = max - strength
+-- and drain is the per-tick gain (the 'resulting drain' column). Only bonds
+-- with a POSITIVE drain are actually climbing; a bond with drain &lt;= 0 is
+-- bleeding and never reaches max on its own (treated as infinite ticks, so
+-- it has top priority to receive energy).
+--
+-- Channeling moves strength instantly: +flow into the receiver (cuts its
+-- deficit, so fewer ticks to max), -requested out of the donor (raises its
+-- ticks). We iteratively move energy from the bond with the FEWEST ticks-to-
+-- max (closest to full) into the bond with the MOST, recomputing after each
+-- step, until the spread between max and min ticks is small or no useful
+-- move remains. Drain is assumed unchanged by channeling (an approximation:
+-- real drain shifts a little as load moves, so rbal re-reads the table at the
+-- end so the next 'bonds'/'rbal' uses fresh numbers).
+-- =====================================================================
+function bond.ticksToMax(strength, mx, drain)
+  local deficit = mx - strength
+  if deficit &lt;= 0 then return 0 end            -- already at/above max
+  if not drain or drain &lt;= 0 then return math.huge end  -- bleeding: never refills
+  return deficit / drain
+end
+
+function bond.rbalance(opts)
+  opts = opts or {}
+  local dryrun = opts.dryrun
+
+  if not bond.have_all_max() then
+    cecho("\n&lt;red&gt;[bond]&lt;reset&gt; Maximums not set for all elements. Run 'setmax' first.\n")
+    return
+  end
+  if not next(bond.cur) then
+    cecho("\n&lt;red&gt;[bond]&lt;reset&gt; No current element data. Run 'tcle' then try again.\n")
+    return
+  end
+
+  local eff = (bond.eff and bond.eff &gt; 0.05) and bond.eff or 0.68
+
+  -- Working copy of projected strengths (we simulate channels here).
+  local st, mx, dr = {}, {}, {}
+  for _, e in ipairs(bond.elements) do
+    local c = bond.cur[e]
+    if not c then
+      cecho("\n&lt;red&gt;[bond]&lt;reset&gt; Missing data for " .. e .. ". Run 'tcle'.\n")
+      return
+    end
+    st[e] = c.strength
+    mx[e] = bond.max[e]
+    dr[e] = c.drain or 0
+  end
+
+  -- Helper to compute current ticks-to-max for every element.
+  local function allTicks()
+    local t = {}
+    for _, e in ipairs(bond.elements) do
+      t[e] = bond.ticksToMax(st[e], mx[e], dr[e])
+    end
+    return t
+  end
+
+  -- Show the starting picture.
+  cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; Tick-convergence balance (equalize time-to-max):\n")
+  do
+    local t = allTicks()
+    for _, e in ipairs(bond.elements) do
+      local tv = t[e]
+      local tstr = (tv == math.huge) and "&lt;red&gt;bleeding&lt;reset&gt;"
+                   or (tv == 0 and "&lt;green&gt;at max&lt;reset&gt;"
+                                or string.format("%.0f ticks", tv))
+      cecho(string.format("    &lt;%s&gt;%-5s&lt;reset&gt; %d/%d  drain %+d  -&gt; %s\n",
+            bond.col(e), e:upper(), st[e], mx[e], dr[e], tstr))
+    end
+  end
+
+  -- Classify bonds.
+  --   gaining  : drain &gt; 0 and below max  -&gt; these we equalize ticks-to-max
+  --   bleeding : drain &lt;= 0 and below max -&gt; channeling can't refill them
+  --   full     : at/above max
+  local plan      = {}
+  local MIN_FLOW  = 10
+  local FLOOR_PCT = 0      -- no artificial floor: donors may give down to need
+                           -- (the energy-balance solve sets the real targets)
+
+  -- A bond is a "climber" whenever its drain is positive: it will refill on
+  -- its own, so under the convergence solve it can sit BELOW max now and climb
+  -- back by the shared target time T. Crucially this includes bonds that are
+  -- currently AT max -- they have surplus strength to donate to slower climbers
+  -- without falling behind. (The old test `st[e] &lt; mx[e]` excluded at-max
+  -- bonds, so when only one bond was below max the solver saw &lt;2 climbers and
+  -- refused to channel, even though the three capped bonds could each spare
+  -- energy.) Bonds with drain &lt;= 0 that are below max are bleeders: channeling
+  -- tops them up but can't change their drain.
+  local bleeders, gaining = {}, {}
+  for _, e in ipairs(bond.elements) do
+    if dr[e] &gt; 0 then
+      gaining[#gaining+1] = e
+    elseif st[e] &lt; mx[e] then
+      bleeders[#bleeders+1] = e
+    end
+  end
+
+  -- Solve for a common time-to-max T across the gaining bonds, conserving
+  -- energy (accounting for channel loss). For a target time T, a gaining bond
+  -- wants strength  target_e = mx_e - dr_e * T.  Bonds whose target is below
+  -- current are donors (give the surplus); above current are receivers (need
+  -- inflow). Channel loss means receivers need MORE raw donor energy than the
+  -- flow they gain, so the energy-balanced T satisfies:
+  --     sum(donor surplus)  ==  sum(receiver need) / efficiency
+  -- We bisect T to satisfy that, then emit one net channel per donor/receiver
+  -- pairing (greedy match) -- no reversals, no ping-pong.
+  if #gaining &gt;= 2 then
+    local function netAt(T)
+      -- returns (totalDonorSurplus, totalReceiverNeed)
+      local give, need = 0, 0
+      for _, e in ipairs(gaining) do
+        local target = mx[e] - dr[e] * T
+        -- clamp target to [floor, max]
+        local floor = mx[e] * FLOOR_PCT
+        if target &lt; floor then target = floor end
+        if target &gt; mx[e] then target = mx[e] end
+        local delta = target - st[e]
+        if delta &lt; 0 then give = give + (-delta)
+        else need = need + delta end
+      end
+      return give, need
+    end
+
+    -- Bisect T to find the energy-balance crossing. At small T, targets sit
+    -- near max =&gt; large receiver 'need', small donor 'give'. At large T, all
+    -- targets hit the floor =&gt; large 'give', zero 'need'. The balanced point is
+    -- where donor energy exactly covers the grossed-up receiver need, i.e.
+    -- f(T) = give*eff - need crosses zero (negative at small T, positive at big T).
+    local Tlo, Thi = 0, 0
+    for _, e in ipairs(gaining) do
+      local tmax = (mx[e] - mx[e]*FLOOR_PCT) / math.max(dr[e], 0.01)
+      if tmax &gt; Thi then Thi = tmax end
+    end
+    Thi = Thi + 50
+    local Tbest = (Tlo + Thi) / 2
+    for _ = 1, 50 do
+      Tbest = (Tlo + Thi) / 2
+      local give, need = netAt(Tbest)
+      local f = give * eff - need
+      if f &gt; 0 then
+        Thi = Tbest          -- too generous (donors over-supply) -&gt; lower T
+      else
+        Tlo = Tbest          -- not enough supply -&gt; raise T
+      end
+    end
+
+    -- Build donor/receiver lists at Tbest.
+    local donors, recvs = {}, {}
+    for _, e in ipairs(gaining) do
+      local target = mx[e] - dr[e] * Tbest
+      local floor  = mx[e] * FLOOR_PCT
+      if target &lt; floor then target = floor end
+      if target &gt; mx[e] then target = mx[e] end
+      local delta = target - st[e]
+      if delta &lt;= -MIN_FLOW then donors[#donors+1] = { e = e, give = -delta }
+      elseif delta &gt;= MIN_FLOW then recvs[#recvs+1] = { e = e, need = delta } end
+    end
+
+    -- Greedy match donors to receivers (largest first). Adjacency-aware:
+    -- counterpart pairs route through an intermediate (efficiency twice).
+    table.sort(donors, function(a,b) return a.give &gt; b.give end)
+    table.sort(recvs,  function(a,b) return a.need &gt; b.need end)
+    local di = 1
+    for _, r in ipairs(recvs) do
+      local needFlow = r.need
+      while needFlow &gt;= MIN_FLOW and di &lt;= #donors do
+        local d = donors[di]
+        if d.give &lt; MIN_FLOW then di = di + 1
+        else
+          local twoHop = not bond.canChannel(d.e, r.e)
+          local effPow = twoHop and (eff * eff) or eff
+          -- deliverable to receiver given donor's remaining 'give'
+          local maxDeliver = math.floor(d.give * effPow)
+          local deliver = math.min(needFlow, maxDeliver)
+          if deliver &lt; MIN_FLOW then di = di + 1
+          else
+            local cost = bond.emitChannel(plan, d.e, r.e, deliver, eff)
+            if cost &lt;= 0 then di = di + 1
+            else
+              d.give   = d.give   - cost
+              needFlow = needFlow - deliver
+            end
+          end
+        end
+      end
+    end
+  end
+  if #bleeders &gt; 0 then
+    local names = {}
+    for _, e in ipairs(bleeders) do names[#names+1] = e:upper() end
+    cecho("    &lt;yellow&gt;note:&lt;reset&gt; &lt;red&gt;" .. table.concat(names, ", ") ..
+          "&lt;reset&gt; have negative drain (bleeding). Channeling tops them up but\n")
+    cecho("          won't change the drain \226\128\148 to truly fix, end a buff or change an element.\n")
+  end
+
+  if #plan == 0 then
+    cecho("    &lt;yellow&gt;No useful channels \226\128\148 every climbing bond is already converging, or only bleeders remain (end a buff / change an element).&lt;reset&gt;\n")
+    return
+  end
+
+  cecho(string.format("    &lt;grey&gt;plan (efficiency ~%.0f%%):&lt;reset&gt;\n", eff * 100))
+  for _, p in ipairs(plan) do
+    cecho(string.format("    channel &lt;yellow&gt;%d&lt;reset&gt; %s -&gt; %s  (~%d flow)%s\n",
+          p.n, p.from, p.to, p.flow, p.via and "  &lt;grey&gt;(via-hop)&lt;reset&gt;" or ""))
+  end
+  -- Projected result: apply the plan to a copy and report the spread of
+  -- time-to-max across the gaining bonds (the ones rbal actually equalizes).
+  do
+    local proj = {}
+    for _, e in ipairs(bond.elements) do proj[e] = st[e] end
+    for _, p in ipairs(plan) do
+      proj[p.from] = proj[p.from] - p.n
+      proj[p.to]   = proj[p.to]   + p.flow
+    end
+    local lo, hi = math.huge, 0
+    for _, e in ipairs(bond.elements) do
+      if dr[e] &gt; 0 and proj[e] &lt; mx[e] then
+        local tk = (mx[e] - proj[e]) / dr[e]
+        if tk &lt; lo then lo = tk end
+        if tk &gt; hi then hi = tk end
+      end
+    end
+    if hi &gt; 0 and lo ~= math.huge then
+      cecho(string.format("    &lt;grey&gt;projected time-to-max spread (gaining bonds): %.0f-%.0f ticks&lt;reset&gt;\n", lo, hi))
+    end
+  end
+
+  if dryrun then
+    cecho("&lt;grey&gt;[bond] dry run \226\128\148 nothing sent.&lt;reset&gt;\n")
+    return
+  end
+
+  local delay = 0
+  for _, p in ipairs(plan) do
+    tempTimer(delay, function()
+      send(bond.cmd .. " channel " .. p.n .. " " .. p.from .. " to " .. p.to)
+    end)
+    delay = delay + 0.4
+  end
+  tempTimer(delay + 0.3, function() send(bond.cmd .. " list elements") end)
+end
+
+-- =====================================================================
+-- 6. BUFF TRACKING  (parsed from `templar_command list all`)
+-- ---------------------------------------------------------------------
+-- Active-spell lines look like:
+--   &lt;fire&gt;     : Tool of elemental justice on voltaic titanium blade ... &lt;13m 20s&gt;.
+--   &lt;combined&gt; : Shield of faith on Direkein &lt;12m 8s&gt;.
+-- These can wrap across two screen lines; the &lt;Nm Ns&gt; duration may be on the
+-- continuation line. We handle that with a multiline trigger that joins the
+-- spell name with whatever duration token appears.
+--
+-- Parsing strategy: a perl trigger captures the element + the text after the
+-- colon on the FIRST line; a second pattern grabs the &lt;..m ..s&gt; duration.
+-- To keep it robust against wrapping we parse the *element + name* on the
+-- element line and capture duration separately if present on the same line.
+-- =====================================================================
+
+-- Parse one full logical spell line (element, descriptive text incl duration).
+function bond.parseSpellLine(elem, rest)
+  -- rest is everything after "&lt;elem&gt; : "
+  -- Guard: only fire|air|water|earth|combined are real buff tags. The trigger
+  -- already restricts this, but double-check here so a stray channel line
+  -- (e.g. "&lt;party&gt;: X reports ...") can never be ingested as a buff.
+  local validElem = { fire=true, air=true, water=true, earth=true, combined=true }
+  if not validElem[tostring(elem):lower()] then return end
+  -- Reject obvious channel/report chatter that shares the &lt;tag&gt;: shape.
+  if rest and (rest:find("reports%s+'") or rest:find("%f[%w]HP:%f[%W]")
+               or rest:find(">>")) then
+    return
+  end
+  -- spell name = text up to " on " (weapon/player), duration = &lt;..m ..s&gt;
+  rest = trim(rest)
+  local dur = rest:match("&lt;(%d+m?%s*%d*s?)&gt;%.?%s*$") or rest:match("&lt;([^&gt;]+)&gt;%.?%s*$")
+  -- spell name is the leading part before " on "
+  local name = rest:match("^(.-)%s+on%s+") or rest:gsub("%s*&lt;[^&gt;]*&gt;%.?%s*$", "")
+  name = trim(name)
+  if name == "" then return end
+
+  -- Target: everything after " on ", with trailing &lt;...&gt; tokens stripped.
+  -- For weapon spells the game accepts the quoted name (e.g. "snek"); for
+  -- player spells it's the player name (e.g. Direkein). We prefer a quoted
+  -- name if one exists, otherwise the cleaned "on &lt;X&gt;" text.
+  local target = nil
+  local after = rest:match("%s+on%s+(.+)$")
+  if after then
+    -- strip any glow / duration &lt;...&gt; tokens
+    after = after:gsub("%s*&lt;[^&gt;]*&gt;", ""):gsub("%.%s*$", "")
+    after = trim(after)
+    local quoted = after:match('named%s+(%b"")') or after:match('(%b"")')
+    if quoted then
+      target = quoted               -- keep the quotes; game expects on "snek"
+    else
+      target = after               -- e.g. Direkein
+    end
+  end
+
+  local key = name:lower()
+  local expires = nil
+  local remain  = nil
+  if dur then
+    local m = tonumber(dur:match("(%d+)m"))
+    local s = tonumber(dur:match("(%d+)s"))
+    remain  = (m or 0)*60 + (s or 0)
+    expires = os.time() + remain
+  end
+
+  -- Track the highest remaining-duration ever seen for this buff; that becomes
+  -- the meter's "full" (max) so the gauge drains from full=fresh to empty=
+  -- expiring. Recasting a buff that reads higher than before raises the max.
+  bond.maxdur = bond.maxdur or {}
+  if remain and remain &gt; (bond.maxdur[key] or 0) then
+    bond.maxdur[key] = remain
+  end
+
+  bond.buffs[key] = {
+    name    = name,
+    element = elem:lower(),
+    target  = target,
+    dur     = dur,
+    expires = expires,
+    maxdur  = bond.maxdur[key],   -- snapshot of the meter ceiling
+  }
+  if bond.quiet then deleteLine() end
+end
+
+-- Called when `list all` reports nothing active.
+function bond.clearBuffs()
+  bond.buffs = {}
+  if bond.quiet then deleteLine() end
+end
+
+-- Called by the "stop the flow ... into your &lt;name&gt;." trigger.
+function bond.endedSpell(name)
+  if not name then return end
+  name = trim(name):gsub("%.$", "")
+  local key = name:lower()
+  if bond.buffs[key] then
+    bond.buffs[key] = nil
+  else
+    -- try a looser match (the end-message wording can differ slightly)
+    for k in pairs(bond.buffs) do
+      if k:find(key, 1, true) or key:find(k, 1, true) then
+        bond.buffs[k] = nil
+        break
+      end
+    end
+  end
+end
+
+-- "into all of your active spells" =&gt; everything gone.
+function bond.endedAll()
+  bond.buffs = {}
+end
+
+function bond.listBuffs()
+  if bond.scrubBuffs then bond.scrubBuffs() end
+  if not next(bond.buffs) then
+    cecho("\n&lt;grey&gt;[bond]&lt;reset&gt; No buffs currently tracked.\n")
+    return
+  end
+  cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; Tracked active buffs:\n")
+  local now = os.time()
+  for _, b in pairs(bond.buffs) do
+    local left = b.expires and (b.expires - now) or nil
+    local tstr
+    if left then
+      local L = math.max(0, left)
+      tstr = string.format("%dm %02ds", math.floor(L/60), L % 60)
+    else
+      tstr = b.dur or "?"
+    end
+    local prot = bond.protected[b.name:lower()] and "  &lt;green&gt;[kept]&lt;reset&gt;" or ""
+    -- Color the &lt;element&gt; tag to match the game. Pad to align names; the
+    -- visible tag text is "&lt;element&gt;" (literal angle brackets).
+    local tagText = "&lt;" .. b.element .. "&gt;"
+    local pad = string.rep(" ", math.max(0, 9 - #tagText))
+    cecho(string.format("    &lt;%s&gt;%s&lt;reset&gt;%s %s  &lt;grey&gt;(%s)&lt;reset&gt;%s\n",
+          bond.col(b.element), tagText, pad, b.name, tstr, prot))
+  end
+end
+
+-- =====================================================================
+-- 7. ENDING BUFFS
+-- =====================================================================
+
+-- endbuffs : end everything (uses the guild's own 'end all').
+function bond.endAll()
+  send(bond.cmd .. " end all")
+end
+
+-- endbuff &lt;partial name&gt; : end ONE tracked buff, looking up its proper target
+-- so you never get "X is not currently on &lt;player&gt;". Matches abbreviations and
+-- partial names against tracked buffs (e.g. 'endbuff hard', 'endbuff ap',
+-- 'endbuff avatar'). If the text matches more than one buff, lists the matches.
+function bond.endNamed(query)
+  if not query or query:gsub("%s", "") == "" then
+    cecho("\n&lt;red&gt;[bond]&lt;reset&gt; Usage: endbuff &lt;name&gt;  (e.g. endbuff hard, endbuff avatar)\n")
+    return
+  end
+  local q = query:lower():gsub("^%s+", ""):gsub("%s+$", "")
+
+  -- Gather candidates: match against full name AND abbreviation.
+  local matches = {}
+  for key, b in pairs(bond.buffs) do
+    local abbr = (bond.abbrFor and bond.abbrFor(b.name) or ""):lower()
+    if key == q or abbr == q or key:find(q, 1, true) or abbr:find(q, 1, true) then
+      matches[#matches+1] = b
+    end
+  end
+
+  if #matches == 0 then
+    cecho("\n&lt;yellow&gt;[bond]&lt;reset&gt; No tracked buff matches '" .. query .. "'.\n")
+    cecho("&lt;grey&gt;[bond] run 'tcla' if your buff list may be stale, or 'bonds' to see what's tracked.&lt;reset&gt;\n")
+    return
+  end
+  if #matches &gt; 1 then
+    -- prefer an exact full-name or exact abbreviation match if present
+    local exact = nil
+    for _, b in ipairs(matches) do
+      local abbr = (bond.abbrFor and bond.abbrFor(b.name) or ""):lower()
+      if b.name:lower() == q or abbr == q then exact = b break end
+    end
+    if exact then
+      matches = { exact }
+    else
+      cecho("\n&lt;yellow&gt;[bond]&lt;reset&gt; '" .. query .. "' matches several buffs \226\128\148 be more specific:\n")
+      for _, b in ipairs(matches) do
+        cecho("    &lt;yellow&gt;" .. (bond.abbrFor and bond.abbrFor(b.name) or b.name) ..
+              "&lt;reset&gt;  (" .. b.name .. ")\n")
+      end
+      return
+    end
+  end
+
+  local b = matches[1]
+  local cmd = bond.cmd .. " end " .. b.name
+  if b.target and b.target ~= "" then cmd = cmd .. " on " .. b.target end
+  cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; Ending &lt;yellow&gt;" .. b.name .. "&lt;reset&gt;" ..
+        (b.target and b.target ~= "" and (" on " .. b.target) or "") .. ".\n")
+  send(cmd)
+  -- optimistic untrack + refresh the panel
+  bond.buffs[b.name:lower()] = nil
+  if bond.ui and bond.ui.rebuild then pcall(bond.ui.rebuild) end
+end
+
+-- keepfaith : end every tracked buff individually EXCEPT protected ones.
+function bond.endExceptProtected()
+  if not next(bond.buffs) then
+    cecho("\n&lt;yellow&gt;[bond]&lt;reset&gt; No tracked buffs. Run 'tcla' (list all) first so I know what's up.\n")
+    return
+  end
+  local toEnd = {}
+  for key, b in pairs(bond.buffs) do
+    if not bond.protected[key] then
+      toEnd[#toEnd+1] = b
+    end
+  end
+  if #toEnd == 0 then
+    cecho("\n&lt;green&gt;[bond]&lt;reset&gt; Nothing to end \226\128\148 only protected buffs are up.\n")
+    return
+  end
+  cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; Ending " .. #toEnd .. " buff(s), keeping protected ones:\n")
+  local delay = 0
+  for _, b in ipairs(toEnd) do
+    local cmd = bond.cmd .. " end " .. b.name
+    if b.target and b.target ~= "" then
+      cmd = cmd .. " on " .. b.target
+    end
+    cecho("    &lt;grey&gt;" .. cmd:gsub(bond.cmd, "tc") .. "&lt;reset&gt;\n")
+    tempTimer(delay, function() send(cmd) end)
+    delay = delay + 0.4
+  end
+end
+
+-- Allow adding/removing protected spells at runtime: keepalso &lt;name&gt; / keepnot &lt;name&gt;
+function bond.keepAlso(name)
+  if not name or name == "" then return end
+  bond.protected[name:lower()] = true
+  cecho("\n&lt;green&gt;[bond]&lt;reset&gt; Will now keep: &lt;yellow&gt;" .. name .. "&lt;reset&gt;\n")
+end
+function bond.keepNot(name)
+  if not name or name == "" then return end
+  bond.protected[name:lower()] = nil
+  cecho("\n&lt;green&gt;[bond]&lt;reset&gt; No longer protecting: &lt;yellow&gt;" .. name .. "&lt;reset&gt;\n")
+end
+
+-- status overview. arg "maxima" shows just the recorded ceilings.
+function bond.status(arg)
+  if arg and arg:lower():match("max") then
+    cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; Recorded maximums:\n")
+    if not next(bond.max) then
+      cecho("    &lt;grey&gt;none set \226\128\148 run 'setmax' (ideally just after 'endbuffs')&lt;reset&gt;\n")
+      return
+    end
+    for _, e in ipairs(bond.elements) do
+      local mx = bond.max[e]
+      cecho(string.format("    &lt;%s&gt;%-5s&lt;reset&gt; %s\n", bond.col(e), e:upper(), mx and tostring(mx) or "&lt;grey&gt;unset&lt;reset&gt;"))
+    end
+    return
+  end
+  -- Default: refresh element + spell data quietly first, then display.
+  bond.refreshThenStatus()
+end
+
+-- ---------------------------------------------------------------------
+-- Quiet refresh: silently query `list elements` and `list all`, gag their
+-- raw output, then render the clean status panel once the data is in.
+-- The parsing triggers check bond.quiet and delete their matched lines.
+-- ---------------------------------------------------------------------
+bond.quiet = bond.quiet or false
+
+-- Gag the current line if a quiet refresh is in progress. Used by triggers
+-- that match the table header and spell-wrap continuation lines, which carry
+-- no data we need but would otherwise clutter the screen during 'bonds'.
+function bond.gagIfQuiet()
+  if bond.quiet then deleteLine() end
+end
+
+function bond.refreshThenStatus()
+  bond.quiet = true
+  -- send muted (second arg false suppresses the input echo in the main window)
+  send(bond.cmd .. " list elements", false)
+  send(bond.cmd .. " list all", false)
+  -- Give the game a beat to reply (triggers parse + gag), then render and
+  -- drop quiet mode. 0.3s is plenty at normal latencies.
+  if bond._statusTimer then killTimer(bond._statusTimer) end
+  bond._statusTimer = tempTimer(0.35, function()
+    bond.quiet = false
+    bond._statusTimer = nil
+    bond.renderStatus()
+  end)
+end
+
+-- The actual rendering (no querying). Called after a quiet refresh, and can
+-- also be called directly if you want to show cached values.
+function bond.renderStatus()
+  cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; ===== Elemental Bond Status =====\n")
+  for _, e in ipairs(bond.elements) do
+    local c = bond.cur[e]
+    local mx = bond.max[e]
+    if c then
+      local pct = mx and string.format("%3.0f%%", c.strength/mx*100) or "  ? "
+      local mxs = mx and tostring(mx) or "unset"
+      local dcol = (c.drain or 0) &gt;= 0 and "green" or "red"
+      cecho(string.format("    &lt;%s&gt;%-5s&lt;reset&gt; %5d / %-5s  (%s)  drain &lt;%s&gt;%+d&lt;reset&gt;\n",
+            bond.col(e), e:upper(), c.strength, mxs, pct, dcol, c.drain or 0))
+    else
+      cecho(string.format("    &lt;%s&gt;%-5s&lt;reset&gt; (no data)\n", bond.col(e), e:upper()))
+    end
+  end
+  cecho(string.format("    channel efficiency ~&lt;yellow&gt;%.0f%%&lt;reset&gt;\n", (bond.eff or 0.68)*100))
+  bond.listBuffs()
+end
+
+-- =====================================================================
+-- 8. BUFF BUTTON PANEL  (Geyser UI, fixed-slot grid)
+-- ---------------------------------------------------------------------
+-- A fixed panel of slots (2 rows x 6 = 12), anchored to the top of the
+-- right-hand chat console and spanning its width. Each active buff fills
+-- one slot left-to-right, top row first; empty slots are hidden.
+--   Left-click  : end that spell (templar_command end &lt;name&gt; on &lt;target&gt;)
+--   Right-click : for the two changeable spells (element barrier,
+--                 tool of elemental justice), a 4-element picker.
+-- Slots are created once and reused (shown/hidden), which is why the
+-- buttons render reliably -- the earlier Adjustable.Container hosted its
+-- children in a content area that left simple labels invisible.
+-- =====================================================================
+bond.ui = bond.ui or {}
+
+-- BUILD MIGRATION. bond.ui is a persistent global, so when this script is
+-- re-saved/reinstalled over a previously-loaded version, the OLD widgets
+-- (bond.ui.panel/container/slots) survive in the table. ensure() early-returns
+-- when bond.ui.panel exists, so without this the NEW code would never rebuild
+-- and you'd keep seeing the old layout (and a stale build trace). We stamp a
+-- build id; if it changed (or is missing), tear down every widget this package
+-- has ever created and start fresh.
+bond.ui.BUILD = "corner-11"  -- bumped: fixed 6-col grid, no window scaling
+if bond.ui._build ~= bond.ui.BUILD then
+  -- Stop any drain ticker from a prior build before dropping handles.
+  if bond.ui.ticker then pcall(killTimer, bond.ui.ticker); bond.ui.ticker = nil end
+  -- Hide any Geyser objects from prior versions by their known names.
+  local stale = { "bondContainer", "bondPanel", "bondBar2" }
+  for i = 1, 12 do stale[#stale+1] = "bondSlot_" .. i end
+  for i = 1, 24 do stale[#stale+1] = "bondTile_" .. i end
+  for i = 1, 24 do stale[#stale+1] = "bondSq_" .. i end
+  for _, nm in ipairs(stale) do
+    pcall(function() if hideWindow then hideWindow(nm) end end)
+  end
+  -- Also hide via live Geyser handles if we have them.
+  if bond.ui.panel then pcall(function() bond.ui.panel:hide() end) end
+  if bond.ui.slots then
+    for _, s in pairs(bond.ui.slots) do pcall(function() s:hide() end) end
+  end
+  bond.ui.panel     = nil
+  bond.ui.container = nil
+  bond.ui.parent    = nil
+  bond.ui.slots     = nil
+  bond.ui.diag      = nil
+  bond.ui.WIDTH     = 374   -- reset on build change
+  bond.ui._build    = bond.ui.BUILD
+end
+
+-- Scrub any buffs that a previous build mis-ingested from channel lines
+-- (e.g. "&lt;party&gt;: X reports ..."). Keep only entries with a real element tag.
+do
+  local validElem = { fire=true, air=true, water=true, earth=true, combined=true }
+  if type(bond) == "table" and type(bond.buffs) == "table" then
+    for k, b in pairs(bond.buffs) do
+      local e = b and tostring(b.element or ""):lower()
+      if not validElem[e] then bond.buffs[k] = nil end
+    end
+  end
+end
+
+bond.ui.ROWS  = 2
+bond.ui.COLS  = 6
+bond.ui.SLOTS = bond.ui.ROWS * bond.ui.COLS
+
+-- ===== Buff bar width (TUNABLE) =====================================
+-- The bar sits in the top-right corner (y=0 down to the momentum bar). This
+-- is the single knob for its width; icesus's top banner is shrunk to end
+-- exactly at the bar's left edge, so changing this moves BOTH. Defaults to a
+-- little wider than the right column (borderRight, usually 360).
+bond.ui.WIDTH = bond.ui.WIDTH or 374
+-- Set false to disable the per-second drain animation (static colored tiles
+-- with a time label, repainted only on buff changes). Use this to test whether
+-- the periodic repaint is causing any UI sluggishness: `buffbar meters`.
+bond.ui.useMeters = (bond.ui.useMeters ~= false)
+-- ===================================================================
+
+-- Visibility intent: "on" = always visible (even with no buffs), nil =
+-- automatic (show only when buffs exist), "off" = hidden until 'buffbar' run.
+-- Default is "on" so the styled panel is always present; `buffbar off` hides it.
+bond.ui.forced = bond.ui.forced or "on"
+
+-- Short labels per spell (edit freely). Kept to ~5 chars so they fit the
+-- square tiles without clipping. The '^' change marker is added separately.
+bond.abbr = {
+  ["armourplate"]               = "AP",
+  ["avatar of the gods"]        = "Avtr",
+  ["element barrier"]           = "Barr",
+  ["instrument of the gods"]    = "Instr",
+  ["shield of faith"]           = "Faith",
+  ["tool of elemental justice"] = "Tool",
+  ["tool of hard justice"]      = "Hard",
+  ["tool of swift justice"]     = "Swift",
+}
+
+-- Hex colors per element for the slot background.
+bond.uiColor = {
+  air      = "#1f6f8b",   -- cyan-teal
+  water    = "#27408b",   -- blue
+  fire     = "#8b2020",   -- red
+  earth    = "#6b6b1f",   -- olive
+  combined = "#7a6a20",   -- gold
+}
+
+-- Which spells can be changed, and the keyword chg expects.
+bond.changeKeyword = {
+  ["element barrier"]           = "barrier",
+  ["tool of elemental justice"] = "tool",
+}
+
+function bond.abbrFor(name)
+  return bond.abbr[name:lower()] or name:sub(1, 5)
+end
+
+-- ---------------------------------------------------------------------
+-- Geometry: the buff bar sits in the TOP-RIGHT CORNER of the client, from
+-- y=0 down to the top of the momentum bar (~the banner height). It is a
+-- top-level overlay pinned to the right edge, width = bond.ui.WIDTH. The
+-- icesus banner is shrunk to end at this bar's left edge (see bond.ui.fitBanner),
+-- so the two sit side by side instead of overlapping.
+-- ---------------------------------------------------------------------
+function bond.ui.geometry()
+  local top = 92
+  pcall(function() if getBorderTop then top = getBorderTop() end end)
+  if not top or top &lt; 1 then top = 92 end
+
+  local W = tonumber(bond.ui.WIDTH) or 420
+  if W &lt; 80 then W = 80 end
+
+  -- Bottom at the banner/right-column boundary (abs y = borderTop), which is
+  -- just above the momentum bar (momentum starts at borderTop+6). Top at y=0.
+  -- Pin to the right edge with the "-W" constraint; height = borderTop.
+  return "-" .. W, 0, W, top, nil      -- top-level overlay (parent=nil)
+end
+
+-- Shrink (or restore) icesus's top banner so its right edge meets the buff
+-- bar's left edge. Driven by bond.ui.WIDTH, so tuning the bar width moves the
+-- banner too. Reversible via bond.ui.fitBanner(true) on teardown.
+function bond.ui.fitBanner(restore)
+  local banner = icesus and icesus.hud and icesus.hud.banner
+  if not banner then return end
+  if restore then
+    pcall(function() banner:resize("100%", nil) end)
+    return
+  end
+  local W = tonumber(bond.ui.WIDTH) or 420
+  -- Leave a 1px seam so the borders don't visually merge.
+  pcall(function() banner:resize("100%-" .. W, nil) end)
+end
+
+-- Build the backdrop bar once, as a direct child of icesus.hud.right. The
+-- individual clickable square tiles are created on demand in rebuild() (also
+-- as direct children of R, styled + shown immediately -- the pattern proven
+-- to paint). We never nest in an intermediate container and never hide a tile
+-- at build time; both were the causes of the earlier invisible grid.
+function bond.ui.ensure()
+  if not Geyser then return end
+  if bond.ui.panel then return end           -- already built
+
+  local x, y, w, h, parent = bond.ui.geometry()
+
+  bond.ui.diag = {}
+  local function step(label, fn)
+    local ok, res = pcall(fn)
+    bond.ui.diag[#bond.ui.diag+1] = label .. ": " .. (ok and "ok" or ("ERR " .. tostring(res)))
+    if not ok then error(label .. " -&gt; " .. tostring(res), 0) end
+    return res
+  end
+
+  bond.ui.parent = parent
+  bond.ui.baseY  = tonumber(y) or 0
+  bond.ui.barW   = tonumber(w) or 348
+  bond.ui.barH   = tonumber(h) or 84
+  -- baseX must be an ABSOLUTE left-edge pixel for tile arithmetic. When x is a
+  -- Geyser "-N" constraint (top-level pinned to the right border), convert it
+  -- to mainWidth - N. When it's already a number (in-container), use it.
+  local nx = tonumber(x)
+  if type(x) == "string" and x:match("^%-%d") then
+    local mw = 1000
+    pcall(function() if getMainWindowSize then mw = (getMainWindowSize()) or mw end end)
+    bond.ui.baseX = mw - (tonumber(x:sub(2)) or 360)
+  else
+    bond.ui.baseX = nx or 6
+  end
+
+  bond.ui.panel = step("panel", function()
+    local cons = { name = "bondBar2", x = x, y = y, width = w, height = h }
+    if parent then return Geyser.Label:new(cons, parent)
+    else return Geyser.Label:new(cons) end
+  end)
+
+  step("panel-style", function()
+    -- Match icesus.core's panel look: bgMain fill, subtle border, 3px radius,
+    -- the same JetBrains Mono stack. (icesus palette: bgMain #131629,
+    -- bgPanel #1a1e35, border #2a2f4e.)
+    bond.ui.panel:setStyleSheet([[
+      background: #131629;
+      color: #8b90a5;
+      border: 1px solid #2a2f4e;
+      border-radius: 4px;
+      font-family: "JetBrains Mono", "DejaVu Sans Mono", "Courier New", monospace;
+      font-size: 13pt;
+      qproperty-alignment: 'AlignCenter';
+    ]])
+  end)
+  pcall(function() bond.ui.panel:setFontSize(11) end)
+  -- NOTE: we deliberately do NOT call enableClickthrough here. A top-level
+  -- clickthrough Label was capturing/forwarding mouse events across the whole
+  -- main console on this Mudlet build, which left the MUD window looking frozen
+  -- with a stuck text cursor. icesus's own panels are plain solid Labels with
+  -- no clickthrough, and they don't cause this -- so we match that: a solid
+  -- backdrop confined to the top-right corner, with the clickable tiles layered
+  -- on top. The backdrop only occupies its own region, so it never sits over
+  -- the main console and can't freeze it.
+
+  -- Tile pool (created lazily in rebuild). Each is a direct child of R.
+  bond.ui.slots = bond.ui.slots or {}
+  bond.ui.container = parent   -- compatibility shim
+
+  -- Shrink icesus's banner so it ends at this bar's left edge. Done once on
+  -- build; bond.ui.show()/setwidth re-run it when the width changes.
+  bond.ui.fitBanner()
+end
+
+-- Create (once) or fetch a square tile Label at pool index idx. Tiles are
+-- DIRECT children of icesus.hud.right and are shown immediately when filled.
+function bond.ui.getTile(idx, sizePx)
+  if bond.ui.slots[idx] then return bond.ui.slots[idx] end
+  local parent = bond.ui.parent
+  local tile
+  local cons = {
+    name   = "bondSq_" .. idx,
+    x = bond.ui.baseX, y = bond.ui.baseY, width = sizePx, height = sizePx,
+  }
+  local ok = pcall(function()
+    if parent then tile = Geyser.Label:new(cons, parent)
+    else tile = Geyser.Label:new(cons) end
+  end)
+  if not ok or not tile then return nil end
+  bond.ui.slots[idx] = tile
+  return tile
+end
+
+-- A clickable end-buff menu, echoed to the main window when the bar is clicked.
+function bond.ui.clickMenu()
+  local list = {}
+  for _, b in pairs(bond.buffs) do list[#list + 1] = b end
+  if #list == 0 then
+    cecho("\n&lt;grey&gt;[bond]&lt;reset&gt; No tracked buffs to end.\n")
+    return
+  end
+  table.sort(list, function(a, b) return (a.name or "") &lt; (b.name or "") end)
+  cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; End a buff:  ")
+  for _, b in ipairs(list) do
+    local nm = b.name
+    echoLink("[" .. bond.abbrFor(nm) .. "]",
+      function()
+        local cmd = bond.cmd .. " end " .. nm
+        if b.target and b.target ~= "" then cmd = cmd .. " on " .. b.target end
+        send(cmd)
+        bond.buffs[nm:lower()] = nil
+        bond.ui.rebuild()
+      end, "end " .. nm, true)
+    cecho("  ")
+  end
+  cecho("\n")
+end
+
+-- Build a horizontal drain-fill background: solid element colour from the left
+-- up to `ratio`, then a dark "spent" colour for the remainder. As the buff
+-- expires the ratio shrinks and the colour recedes leftward (full=fresh).
+local function drainFill(color, ratio)
+  ratio = math.max(0, math.min(ratio or 0, 1))
+  local empty = "#11141f"
+  -- Use SOLID colours outside a safe middle band. Near 0 or 1 a
+  -- qlineargradient with near-coincident stops can render incorrectly or, on
+  -- some Qt builds, stall -- which lined up with the client freezing exactly
+  -- when a meter reached 0s. Below ~3% show solid empty; above ~97% show solid
+  -- fill; only build a gradient in between, with well-separated stops.
+  if ratio &lt;= 0.03 then
+    return empty
+  elseif ratio &gt;= 0.97 then
+    return color
+  end
+  -- Keep the two stops a clear distance apart (&gt;= 1%) so they never coincide.
+  local lo = ratio
+  local hi = math.min(ratio + 0.01, 1)
+  return string.format(
+    "qlineargradient(x1:0, y1:0, x2:1, y2:0, " ..
+    "stop:0 %s, stop:%.3f %s, stop:%.3f %s, stop:1 %s)",
+    color, lo, color, hi, empty, empty)
+end
+
+-- Remaining-time ratio for a buff (1=fresh, 0=expired), using the highest
+-- duration ever seen for that buff as the meter ceiling.
+local function buffRatio(b)
+  local mx = b.maxdur or (bond.maxdur and bond.maxdur[(b.name or ""):lower()])
+  if not mx or mx &lt;= 0 then return 1 end
+  local left = (b.expires or 0) - os.time()
+  if left &lt; 0 then left = 0 end
+  return left / mx
+end
+
+local function fmtLeft(b)
+  local left = (b.expires or 0) - os.time()
+  if left &lt; 0 then left = 0 end
+  if left &gt;= 60 then return string.format("%dm", math.floor(left/60))
+  else return string.format("%ds", left) end
+end
+
+-- Render the tracked buffs as TWO ROWS of clickable duration-meter tiles.
+--   Left-click  : end that buff (templar_command end &lt;name&gt; [on &lt;target&gt;])
+--   Right-click : for changeable buffs (Barrier / Tool), a 4-element picker.
+-- Each tile is a horizontal meter that drains as the buff expires.
+function bond.ui.rebuild()
+  if not Geyser then return end
+  if bond.scrubBuffs then bond.scrubBuffs() end   -- drop any channel-line pollution
+  bond.ui.ensure()
+  if not bond.ui.panel then return end
+  -- Refresh baseX from the live window size every rebuild so tiles always
+  -- align with bondBar2 regardless of when ensure() originally ran.
+  do
+    local mw = 1920
+    pcall(function() if getMainWindowSize then mw = getMainWindowSize() or mw end end)
+    local W = tonumber(bond.ui.WIDTH) or 374
+    bond.ui.baseX = mw - W
+    bond.ui.barW  = W
+  end
+
+  -- Honor "off": hide the bar and every tile, stop the drain timer.
+  if bond.ui.forced == "off" then
+    pcall(function() bond.ui.panel:hide() end)
+    for _, t in ipairs(bond.ui.slots) do pcall(function() t:hide() end) end
+    bond.ui.stopTicker()
+    return
+  end
+
+  local list = {}
+  for _, b in pairs(bond.buffs) do list[#list + 1] = b end
+  table.sort(list, function(a, b) return (a.name or "") &lt; (b.name or "") end)
+
+  -- Empty: hide tiles; show the styled placeholder panel if forced "on",
+  -- otherwise hide the bar. The placeholder matches icesus's muted panel look
+  -- (textDim label on the bgMain fill) so an empty bar reads as an intentional
+  -- HUD panel, not a black box.
+  if #list == 0 then
+    for _, t in ipairs(bond.ui.slots) do pcall(function() t:hide() end) end
+    bond.ui.stopTicker()
+    if bond.ui.forced == "on" then
+      pcall(function() bond.ui.panel:show() end)
+      pcall(function() bond.ui.panel:raise() end)
+      bond.ui.panel:echo(
+        [[&lt;center&gt;&lt;span style="color:#5b6178;font-weight:600;letter-spacing:1px"&gt;]] ..
+        [[no active buffs&lt;/span&gt;&lt;/center&gt;]])
+    else
+      pcall(function() bond.ui.panel:hide() end)
+    end
+    return
+  end
+
+  -- Show the solid backdrop as the panel background (icesus-style), then layer
+  -- the clickable tiles on top of it. Clickthrough is no longer used, so the
+  -- backdrop is safe -- it stays in its top-right corner region and the tiles,
+  -- raised above it, catch their own clicks.
+  pcall(function() bond.ui.panel:show() end)
+  pcall(function() bond.ui.panel:lower() end)   -- keep it behind the tiles
+  pcall(function() bond.ui.panel:echo("") end)  -- clear any placeholder text
+
+  -- TWO-ROW layout. Always 6 columns per row (bond.ui.COLS), fixed tile size.
+  -- Tiles do NOT stretch to fill the bar width; the 6-slot grid is fixed so
+  -- the layout stays consistent regardless of how many buffs are active or
+  -- how wide the window is.
+  local n      = #list
+  local barH   = bond.ui.barH or 42
+  local rows   = 2
+  local gap    = 3
+  local perRow = bond.ui.COLS  -- always 6; never scale to buff count
+  local cellH  = math.floor((barH - gap) / rows)            -- row height
+  -- Fixed tile width: enough for the label + time, regardless of bar width.
+  local cellW  = math.floor((bond.ui.WIDTH - gap * (perRow + 1)) / perRow)
+  if cellW &lt; 24 then cellW = 24 end
+  if cellH &lt; 12 then cellH = 12 end
+
+  bond.ui.tileMeta = {}    -- remember per-tile data for the drain ticker
+
+  for i, b in ipairs(list) do
+    local r = math.floor((i - 1) / perRow)   -- 0-based row
+    local c = (i - 1) % perRow               -- 0-based col
+    local tile = bond.ui.getTile(i, cellW)
+    if tile then
+      local elem       = (b.element or "combined")
+      local bg         = bond.uiColor[elem] or "#444"
+      local label      = bond.abbrFor(b.name)
+      local key        = b.name:lower()
+      local changeable = bond.changeKeyword[key] ~= nil
+      local kw         = bond.changeKeyword[key]
+      local spellName, spellTarget = b.name, b.target
+
+      local x = bond.ui.baseX + c * (cellW + gap)
+      local y = bond.ui.baseY + r * (cellH + gap)
+      pcall(function() tile:move(x, y) end)
+      pcall(function() tile:resize(cellW, cellH) end)
+
+      -- Paint the drain meter + label. style/echo are split so the ticker
+      -- can cheaply re-call paintTile() without recomputing layout.
+      bond.ui.tileMeta[i] = { buff = b, color = bg, label = label,
+                              changeable = changeable }
+      bond.ui.paintTile(i, true)
+
+      pcall(function()
+        tile:setToolTip(changeable
+          and (spellName .. "  (Left: end   Right: change element)")
+          or  (spellName .. "  (click to end)"))
+      end)
+      pcall(function()
+        tile:setClickCallback(function(event)
+          local btn = type(event) == "table" and event.button or "LeftButton"
+          if btn == "RightButton" and kw then
+            bond.ui.elementMenu(kw, label)
+          else
+            local cmd = bond.cmd .. " end " .. spellName
+            if spellTarget and spellTarget ~= "" then cmd = cmd .. " on " .. spellTarget end
+            send(cmd)
+            bond.buffs[spellName:lower()] = nil
+            bond.ui.rebuild()
+          end
+        end)
+      end)
+      pcall(function() tile:show() end)
+      pcall(function() tile:raise() end)
+    end
+  end
+
+  -- Hide any leftover tiles beyond the current buff count.
+  for i = n + 1, #bond.ui.slots do
+    pcall(function() bond.ui.slots[i]:hide() end)
+  end
+
+  bond.ui.startTicker()
+end
+
+-- Paint one tile. To keep the UI responsive we AVOID calling setStyleSheet on
+-- every tick -- repeated stylesheet reparsing/relayout on many labels is what
+-- made the client feel frozen. We only re-issue the gradient stylesheet when
+-- the meter's fill BUCKET (whole-percent step) actually changes; the cheap
+-- text echo (time remaining) happens every tick.
+function bond.ui.paintTile(i, force)
+  local meta = bond.ui.tileMeta and bond.ui.tileMeta[i]
+  local tile = bond.ui.slots and bond.ui.slots[i]
+  if not meta or not tile then return end
+  local ratio  = buffRatio(meta.buff)
+  local bucket = math.floor(ratio * 100 + 0.5)          -- 0..100
+  if force or meta.bucket ~= bucket then
+    meta.bucket = bucket
+    pcall(function() tile:setStyleSheet(string.format([[
+      background: %s;
+      color: #eef0f6;
+      border: 1px solid #2a2f4e;
+      border-radius: 3px;
+      font-weight: 700;
+      qproperty-alignment: 'AlignCenter';
+    ]], drainFill(meta.color, ratio))) end)
+    pcall(function() tile:setFontSize(8) end)
+  end
+  tile:echo(string.format(
+    [[&lt;center&gt;&lt;span style="color:#eef0f6;font-weight:700"&gt;%s%s&lt;/span&gt;]] ..
+    [[&lt;span style="color:#c8cdd8"&gt; %s&lt;/span&gt;&lt;/center&gt;]],
+    meta.label, (meta.changeable and [[&lt;span style="color:#fbbf24"&gt;^&lt;/span&gt;]] or ""),
+    fmtLeft(meta.buff)))
+end
+
+-- Remove any buff whose element isn't a real bond element. Defends against
+-- channel chatter ("&lt;party&gt;: X reports ...") that a stale/old trigger from a
+-- prior install might still feed in. Cheap; safe to call often.
+function bond.scrubBuffs()
+  local valid = { fire=true, air=true, water=true, earth=true, combined=true }
+  if type(bond.buffs) ~= "table" then return end
+  for k, b in pairs(bond.buffs) do
+    local e = b and tostring(b.element or ""):lower()
+    local nm = b and tostring(b.name or "")
+    if not valid[e] or nm:find("reports") or nm:find(">>") or nm:find("HP:") then
+      bond.buffs[k] = nil
+    end
+  end
+end
+
+-- Drain ticker: a SINGLE repeating timer (every 2s). The 4th arg `true` makes
+-- tempTimer repeat on its own until killed -- so the callback must NOT create
+-- another timer. (A prior version both passed `true` AND re-called
+-- startTicker() each tick, spawning an exponentially growing pile of repeating
+-- timers that eventually hard-froze the whole client. That was the freeze.)
+function bond.ui.startTicker()
+  if not bond.ui.useMeters then return end       -- animation disabled
+  if bond.ui.ticker then return end              -- already running; never dup
+  bond.ui.ticker = tempTimer(2, function()
+    -- Do NOT nil the id and do NOT reschedule here -- this timer repeats itself.
+    if bond.ui.forced == "off" or not bond.ui.tileMeta or not next(bond.ui.tileMeta) then
+      return
+    end
+    -- Reap any buff whose timer has run out, then a single rebuild.
+    local now, reaped = os.time(), false
+    for k, b in pairs(bond.buffs) do
+      if b.expires and (b.expires - now) &lt;= 0 then
+        bond.buffs[k] = nil
+        reaped = true
+      end
+    end
+    if reaped then
+      bond.ui.rebuild()
+      return
+    end
+    for i in pairs(bond.ui.tileMeta) do bond.ui.paintTile(i) end
+  end, true)
+end
+
+function bond.ui.stopTicker()
+  if bond.ui.ticker then
+    pcall(killTimer, bond.ui.ticker)
+    bond.ui.ticker = nil
+  end
+end
+
+-- Right-click element picker (kept for the chg flow): clickable choices.
+function bond.ui.elementMenu(keyword, label)
+  cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; Change &lt;yellow&gt;" .. label .. "&lt;reset&gt; to:  ")
+  for _, e in ipairs({ "fire", "air", "water", "earth" }) do
+    echoLink("[" .. e:upper() .. "]",
+             function() bond.change(keyword, e); bond.ui.rebuild() end,
+             "change " .. label .. " to " .. e, true)
+    cecho("  ")
+  end
+  cecho("\n")
+end
+
+-- Show / hide / re-anchor controls (buffbar alias).
+function bond.ui.show()
+  bond.ui.forced = "on"
+  local ok, err = pcall(function() bond.ui.ensure() end)
+  if not ok then
+    cecho("\n&lt;red&gt;[bond] buff panel failed to build:&lt;reset&gt; " .. tostring(err) .. "\n")
+    cecho("&lt;grey&gt;[bond] type 'buffbar where' to see which step failed.&lt;reset&gt;\n")
+    return
+  end
+  pcall(function() bond.ui.panel:show() end)
+  pcall(function() bond.ui.panel:raise() end)
+  if bond.ui.fitBanner then bond.ui.fitBanner() end
+  if next(bond.buffs) then bond.ui.rebuild() end
+  send("templar_command list all")
+end
+
+-- Toggle the drain animation on/off (diagnostic + preference).
+function bond.ui.toggleMeters()
+  bond.ui.useMeters = not bond.ui.useMeters
+  if not bond.ui.useMeters then bond.ui.stopTicker() end
+  bond.ui.rebuild()
+  cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; Drain animation " ..
+    (bond.ui.useMeters and "&lt;green&gt;ON&lt;reset&gt;" or "&lt;yellow&gt;OFF&lt;reset&gt;") .. ".\n")
+end
+
+-- Set the bar width (and re-fit the banner). Usage: buffbar width 460
+function bond.ui.setWidth(n)
+  local w = tonumber(n)
+  if not w or w &lt; 80 then
+    cecho("\n&lt;yellow&gt;[bond]&lt;reset&gt; Usage: buffbar width &lt;pixels&gt;  (e.g. buffbar width 460)\n")
+    cecho("&lt;grey&gt;[bond] current width: " .. tostring(bond.ui.WIDTH) .. "&lt;reset&gt;\n")
+    return
+  end
+  bond.ui.WIDTH = math.floor(w)
+  -- Rebuild from scratch so the bar + tiles re-anchor to the new width, and
+  -- the banner follows.
+  bond.ui.reset()
+  cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; Buff bar width set to &lt;yellow&gt;" .. bond.ui.WIDTH .. "&lt;reset&gt; px.\n")
+end
+
+function bond.ui.hide()
+  bond.ui.forced = "off"
+  pcall(function() bond.ui.panel:hide() end)
+  if bond.ui.slots then
+    for _, t in pairs(bond.ui.slots) do pcall(function() t:hide() end) end
+  end
+  if bond.ui.stopTicker then bond.ui.stopTicker() end
+  -- Give the banner its full width back so hiding the bar doesn't leave a gap.
+  if bond.ui.fitBanner then bond.ui.fitBanner(true) end
+end
+
+-- Recompute position (after a resolution change or if icesus.core loads late).
+function bond.ui.reset()
+  pcall(function() bond.ui.panel:hide() end)
+  bond.ui.panel = nil
+  bond.ui.slots = nil
+  bond.ui.container = nil
+  bond.ui.forced = "on"
+  local ok, err = pcall(function() bond.ui.ensure() end)
+  if not ok then
+    cecho("\n&lt;red&gt;[bond] buff panel failed to build:&lt;reset&gt; " .. tostring(err) .. "\n")
+    cecho("&lt;grey&gt;[bond] type 'buffbar where' to see which step failed.&lt;reset&gt;\n")
+    return
+  end
+  pcall(function() bond.ui.panel:show() end)
+  pcall(function() bond.ui.panel:raise() end)
+  if next(bond.buffs) then bond.ui.rebuild() end
+  send("templar_command list all")
+  cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; Buff bar re-anchored and shown.\n")
+end
+
+-- Diagnostic: report the bar's computed geometry and state.
+function bond.ui.where()
+  local x, y, w, h = bond.ui.geometry()
+  cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; Buff bar diagnostics:\n")
+  cecho(string.format("    computed anchor : x=%s  y=%s  w=%s  h=%s\n",
+        tostring(x), tostring(y), tostring(w), tostring(h)))
+  cecho("    intent (forced) : &lt;yellow&gt;" .. tostring(bond.ui.forced or "auto") .. "&lt;reset&gt;\n")
+  cecho("    bar exists      : " .. tostring(bond.ui.panel ~= nil) .. "\n")
+  local nb = 0 ; for _ in pairs(bond.buffs) do nb = nb + 1 end
+  cecho("    tracked buffs   : &lt;yellow&gt;" .. nb .. "&lt;reset&gt;\n")
+  local R = icesus and icesus.hud and icesus.hud.right
+  cecho("    right column    : " .. (R and "found (anchoring to it)" or "not found (using fallback)") .. "\n")
+  if bond.ui.diag and #bond.ui.diag &gt; 0 then
+    cecho("    build trace:\n")
+    for _, line in ipairs(bond.ui.diag) do
+      local col = line:find("ERR") and "red" or "grey"
+      cecho("      &lt;" .. col .. "&gt;" .. line .. "&lt;reset&gt;\n")
+    end
+  end
+  if nb == 0 then
+    cecho("    &lt;grey&gt;tip: run 'tcla' to populate, or cast a buff. With intent=on the empty bar still shows.&lt;reset&gt;\n")
+  end
+end
+
+-- Hook UI refresh into the data-change points (functions defined earlier).
+do
+  -- `list all` arrives as a burst of lines; debounce to one rebuild per burst.
+  local _parse = bond.parseSpellLine
+  bond.parseSpellLine = function(elem, rest)
+    _parse(elem, rest)
+    if bond.ui._debounce then killTimer(bond.ui._debounce) end
+    bond.ui._debounce = tempTimer(0.2, function()
+      bond.ui._debounce = nil
+      bond.ui.rebuild()
+    end)
+  end
+
+  local _clear = bond.clearBuffs
+  bond.clearBuffs = function() _clear(); bond.ui.rebuild() end
+
+  local _ended = bond.endedSpell
+  bond.endedSpell = function(name) _ended(name); bond.ui.rebuild() end
+
+  local _endedAll = bond.endedAll
+  bond.endedAll = function() _endedAll(); bond.ui.rebuild() end
+end
+
+cecho("\n&lt;cyan&gt;[bond]&lt;reset&gt; Templar Elemental Bond Manager v2.9.16 (always-on styled panel, build corner-8) loaded. Type &lt;yellow&gt;bondhelp&lt;reset&gt; for commands.\n")
+cecho("&lt;grey&gt;[bond]&lt;reset&gt; Type &lt;yellow&gt;buffbar&lt;reset&gt; to show the buff panel, or run &lt;yellow&gt;tcla&lt;reset&gt; to populate it.\n")
+
+-- If the bar is set to always-on (the default), build and show it now so the
+-- styled panel appears immediately -- no need to type `buffbar`. Deferred a
+-- tick so icesus.core's HUD (which we anchor to) is fully constructed first.
+if bond.ui.forced == "on" then
+  tempTimer(0.5, function()
+    pcall(function() bond.ui.ensure() end)
+    pcall(function() bond.ui.rebuild() end)
+    -- Ask the game for current buffs so the bar fills in right away.
+    if isConnected and isConnected() then
+      send(bond.cmd .. " list all")
+    end
+  end)
+end
+</script><eventHandlerList />
+		</Script>
+	</ScriptPackage>
+	<KeyPackage />
+</MudletPackage>

@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+	<TriggerPackage>
+		<TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+			<name>skill-loop</name>
+			<script></script>
+			<triggerType>0</triggerType>
+			<conditonLineDelta>0</conditonLineDelta>
+			<mStayOpen>0</mStayOpen>
+			<mCommand></mCommand>
+			<packageName>skill-loop</packageName>
+			<mFgColor>#ff0000</mFgColor>
+			<mBgColor>#ffff00</mBgColor>
+			<mSoundFile></mSoundFile>
+			<colorTriggerFgColor>#000000</colorTriggerFgColor>
+			<colorTriggerBgColor>#000000</colorTriggerBgColor>
+			<regexCodeList />
+			<regexCodePropertyList />
+			<TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+				<name>skill-loop</name>
+				<script></script>
+				<triggerType>0</triggerType>
+				<conditonLineDelta>0</conditonLineDelta>
+				<mStayOpen>0</mStayOpen>
+				<mCommand></mCommand>
+				<packageName>skill-loop</packageName>
+				<mFgColor>#ff0000</mFgColor>
+				<mBgColor>#ffff00</mBgColor>
+				<mSoundFile></mSoundFile>
+				<colorTriggerFgColor>#000000</colorTriggerFgColor>
+				<colorTriggerBgColor>#000000</colorTriggerBgColor>
+				<regexCodeList />
+				<regexCodePropertyList />
+				<Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+					<name>skill-loop maneuver slot free</name>
+					<script>-- "You decide to try a combat maneuver!" means the skill slot is open.
+-- Fire the next iteration of the loop immediately.
+if not skill_loop or not skill_loop.active then return end
+
+if not icesus or not icesus.state or not icesus.state.inCombat then
+  skill_loop.active = false
+  skill_loop.paused = false
+  skill_loop_cancel_watch()
+  cecho("\n&lt;orange&gt;[LOOP]&lt;reset&gt; Loop stopped — left combat.\n")
+  return
+end
+
+if skill_loop.sacrifice then
+  skill_loop_check_hp()
+else
+  send(skill_loop.cmd, false)
+end</script>
+					<triggerType>0</triggerType>
+					<conditonLineDelta>0</conditonLineDelta>
+					<mStayOpen>0</mStayOpen>
+					<mCommand></mCommand>
+					<packageName></packageName>
+					<mFgColor>#ff0000</mFgColor>
+					<mBgColor>#ffff00</mBgColor>
+					<mSoundFile></mSoundFile>
+					<colorTriggerFgColor>#000000</colorTriggerFgColor>
+					<colorTriggerBgColor>#000000</colorTriggerBgColor>
+					<regexCodeList>
+						<string>^You decide to try a combat maneuver!</string>
+					</regexCodeList>
+					<regexCodePropertyList>
+						<integer>1</integer>
+					</regexCodePropertyList>
+				</Trigger>
+				<Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+					<name>skill-loop aoo slot free</name>
+					<script>-- Attack-of-opportunity window: fire the loop skill immediately.
+if not skill_loop or not skill_loop.active then return end
+
+if not icesus or not icesus.state or not icesus.state.inCombat then
+  skill_loop.active = false
+  skill_loop.paused = false
+  skill_loop_cancel_watch()
+  cecho("\n&lt;orange&gt;[LOOP]&lt;reset&gt; Loop stopped — left combat.\n")
+  return
+end
+
+if skill_loop.sacrifice then
+  skill_loop_check_hp()
+else
+  send(skill_loop.cmd, false)
+end</script>
+					<triggerType>0</triggerType>
+					<conditonLineDelta>0</conditonLineDelta>
+					<mStayOpen>0</mStayOpen>
+					<mCommand></mCommand>
+					<packageName></packageName>
+					<mFgColor>#ff0000</mFgColor>
+					<mBgColor>#ffff00</mBgColor>
+					<mSoundFile></mSoundFile>
+					<colorTriggerFgColor>#000000</colorTriggerFgColor>
+					<colorTriggerBgColor>#000000</colorTriggerBgColor>
+					<regexCodeList>
+						<string>^As your opponent takes a step backwards you gain an ideal moment to do a swift blow of justice\.</string>
+					</regexCodeList>
+					<regexCodePropertyList>
+						<integer>1</integer>
+					</regexCodePropertyList>
+				</Trigger>
+				<Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+					<name>skill-loop battle over</name>
+					<script>-- Combat ended — stop the loop and cancel any queued skill usage.
+if skill_loop and skill_loop.active then
+  skill_loop.active = false
+  skill_loop.paused = false
+  skill_loop_cancel_watch()
+  cecho("\n&lt;orange&gt;[LOOP]&lt;reset&gt; Loop stopped — Battle Over.\n")
+end
+send("stop", false)</script>
+					<triggerType>0</triggerType>
+					<conditonLineDelta>0</conditonLineDelta>
+					<mStayOpen>0</mStayOpen>
+					<mCommand></mCommand>
+					<packageName></packageName>
+					<mFgColor>#ff0000</mFgColor>
+					<mBgColor>#ffff00</mBgColor>
+					<mSoundFile></mSoundFile>
+					<colorTriggerFgColor>#000000</colorTriggerFgColor>
+					<colorTriggerBgColor>#000000</colorTriggerBgColor>
+					<regexCodeList>
+						<string>^Battle Over\.$</string>
+					</regexCodeList>
+					<regexCodePropertyList>
+						<integer>1</integer>
+					</regexCodePropertyList>
+				</Trigger>
+				<Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+					<name>skill-loop auto-start on new attack</name>
+					<script>-- "You attack X and get a chance to try to hit first!" fires when you
+-- engage a new foe. Auto-start the loop with the last skill used,
+-- but only if a skill has been set and the loop isn't already running.
+if not skill_loop or not skill_loop.last_cmd or skill_loop.last_cmd == "" then
+  return
+end
+if skill_loop.active then return end
+
+skill_loop.active    = true
+skill_loop.paused    = false
+skill_loop.sacrifice = false
+skill_loop.cmd       = skill_loop.last_cmd
+
+skill_loop_cancel_watch()
+cecho("\n&lt;cyan&gt;[LOOP]&lt;reset&gt; Auto-starting: &lt;white&gt;" .. skill_loop.cmd .. "&lt;reset&gt;\n")
+send(skill_loop.cmd, false)</script>
+					<triggerType>0</triggerType>
+					<conditonLineDelta>0</conditonLineDelta>
+					<mStayOpen>0</mStayOpen>
+					<mCommand></mCommand>
+					<packageName></packageName>
+					<mFgColor>#ff0000</mFgColor>
+					<mBgColor>#ffff00</mBgColor>
+					<mSoundFile></mSoundFile>
+					<colorTriggerFgColor>#000000</colorTriggerFgColor>
+					<colorTriggerBgColor>#000000</colorTriggerBgColor>
+					<regexCodeList>
+						<string>^You attack .+ and get a chan(?:ce|ge) to try to hit first!</string>
+					</regexCodeList>
+					<regexCodePropertyList>
+						<integer>1</integer>
+					</regexCodePropertyList>
+				</Trigger>
+			</TriggerGroup>
+		</TriggerGroup>
+	</TriggerPackage>
+	<TimerPackage />
+	<AliasPackage>
+		<AliasGroup isActive="yes" isFolder="yes">
+			<name>skill-loop</name>
+			<script></script>
+			<command></command>
+			<packageName>skill-loop</packageName>
+			<regex></regex>
+			<AliasGroup isActive="yes" isFolder="yes">
+				<name>skill-loop</name>
+				<script></script>
+				<command></command>
+				<packageName>skill-loop</packageName>
+				<regex></regex>
+
+				<!-- ══════════════════════════════════════════════
+				     BLOW OF JUSTICE
+				     ══════════════════════════════════════════════ -->
+				<Alias isActive="yes" isFolder="no">
+					<name>bj</name>
+					<script>local target = (matches[2] and matches[2] ~= "") and (" at " .. matches[2]) or ""
+local cmd = "use blow of justice" .. target
+skill_loop_start(cmd, false)</script>
+					<command></command>
+					<packageName></packageName>
+					<regex>^bj(?: (.+))?$</regex>
+				</Alias>
+				<Alias isActive="yes" isFolder="no">
+					<name>bjs — blow of justice sacrifice</name>
+					<script>local arg1 = (matches[2] and matches[2] ~= "") and matches[2] or nil
+local arg2 = (matches[3] and matches[3] ~= "") and matches[3] or nil
+
+local target, hppct
+if arg1 then
+  if tonumber(arg1) then
+    hppct = arg1
+  else
+    target = arg1
+    if arg2 and tonumber(arg2) then hppct = arg2 end
+  end
+end
+
+local cmd = "use blow of justice at"
+if target then cmd = cmd .. " " .. target end
+cmd = cmd .. " to sacrifice"
+if hppct then cmd = cmd .. " " .. hppct .. "% of health" end
+
+skill_loop_start(cmd, true)</script>
+					<command></command>
+					<packageName></packageName>
+					<regex>^bjs(?:(?: (\S+))?(?: (\d+))?)?$</regex>
+				</Alias>
+				<Alias isActive="yes" isFolder="no">
+					<name>bjj — blow of justice judge</name>
+					<script>local target = (matches[2] and matches[2] ~= "") and (" " .. matches[2]) or ""
+local cmd = "use blow of justice at" .. target .. " to judge"
+skill_loop_start(cmd, false)</script>
+					<command></command>
+					<packageName></packageName>
+					<regex>^bjj(?: (.+))?$</regex>
+				</Alias>
+
+				<!-- ══════════════════════════════════════════════
+				     KICK
+				     ══════════════════════════════════════════════ -->
+				<Alias isActive="yes" isFolder="no">
+					<name>kick</name>
+					<script>local target = (matches[2] and matches[2] ~= "") and (" " .. matches[2]) or ""
+local cmd = "kick" .. target
+skill_loop_start(cmd, false)</script>
+					<command></command>
+					<packageName></packageName>
+					<regex>^kick(?: (.+))?$</regex>
+				</Alias>
+
+				<!-- ══════════════════════════════════════════════
+				     SHIELD RUSH  (alias: sr)
+				     ══════════════════════════════════════════════ -->
+				<Alias isActive="yes" isFolder="no">
+					<name>sr — shield rush</name>
+					<script>local target = (matches[2] and matches[2] ~= "") and (" at " .. matches[2]) or ""
+local cmd = "use shield rush" .. target
+skill_loop_start(cmd, false)</script>
+					<command></command>
+					<packageName></packageName>
+					<regex>^sr(?: (.+))?$</regex>
+				</Alias>
+
+				<!-- ══════════════════════════════════════════════
+				     SHIELD PUNCH  (alias: sp)
+				     ══════════════════════════════════════════════ -->
+				<Alias isActive="yes" isFolder="no">
+					<name>sp — shield punch</name>
+					<script>local target = (matches[2] and matches[2] ~= "") and (" at " .. matches[2]) or ""
+local cmd = "use shield punch" .. target
+skill_loop_start(cmd, false)</script>
+					<command></command>
+					<packageName></packageName>
+					<regex>^sp(?: (.+))?$</regex>
+				</Alias>
+
+				<!-- ══════════════════════════════════════════════
+				     LOOP — repeat last skill
+				     ══════════════════════════════════════════════ -->
+				<Alias isActive="yes" isFolder="no">
+					<name>loop</name>
+					<script>-- Start looping whatever skill was last used, without changing which skill
+-- is remembered. Optionally override the target: "loop orc" re-targets
+-- the last skill at a new target if the command contains a target slot.
+local override_target = (matches[2] and matches[2] ~= "") and matches[2] or nil
+
+if not skill_loop or not skill_loop.last_cmd or skill_loop.last_cmd == "" then
+  cecho("\n&lt;red&gt;[LOOP]&lt;reset&gt; No skill set yet — use bj / kick / sr / sp first.\n")
+  return
+end
+
+local cmd = skill_loop.last_cmd
+if override_target then
+  -- Replace the existing target in common patterns, or just append " at &lt;target&gt;"
+  -- Strip old " at &lt;word&gt;" suffix and re-append with new target
+  cmd = cmd:gsub("%s+at%s+%S+$", "")
+  cmd = cmd .. " at " .. override_target
+end
+
+skill_loop_start(cmd, false)</script>
+					<command></command>
+					<packageName></packageName>
+					<regex>^loop(?: (.+))?$</regex>
+				</Alias>
+
+				<!-- ══════════════════════════════════════════════
+				     LOOPSTOP / BJSTOP — stop the loop
+				     ══════════════════════════════════════════════ -->
+				<Alias isActive="yes" isFolder="no">
+					<name>loopstop</name>
+					<script>if skill_loop and skill_loop.active then
+  skill_loop.active  = false
+  skill_loop.paused  = false
+  skill_loop_cancel_watch()
+  cecho("\n&lt;orange&gt;[LOOP]&lt;reset&gt; Loop stopped.\n")
+else
+  cecho("\n&lt;grey&gt;[LOOP]&lt;reset&gt; No loop running.\n")
+end</script>
+					<command></command>
+					<packageName></packageName>
+					<regex>^(?:loop|bj)stop$</regex>
+				</Alias>
+
+			</AliasGroup>
+		</AliasGroup>
+	</AliasPackage>
+	<ActionPackage />
+	<ScriptPackage>
+		<ScriptGroup isActive="yes" isFolder="yes">
+			<name>skill-loop</name>
+			<packageName>skill-loop</packageName>
+			<script></script>
+			<eventHandlerList />
+			<ScriptGroup isActive="yes" isFolder="yes">
+				<name>skill-loop</name>
+				<packageName>skill-loop</packageName>
+				<script></script>
+				<eventHandlerList />
+				<Script isActive="yes" isFolder="no">
+					<name>skill-loop functions</name>
+					<packageName>skill-loop</packageName>
+					<script>
+SKILL_LOOP_HP_FLOOR       = 0.30
+SKILL_LOOP_WATCH_INTERVAL = 1.0
+
+skill_loop = skill_loop or {}
+-- skill_loop.last_cmd  persists across combats; set by skill_loop_start()
+-- skill_loop.cmd       is the command currently being looped
+-- skill_loop.active    / .paused / .sacrifice as before
+
+function skill_loop_cancel_watch()
+  if skill_loop.watch_timer then
+    killTimer(skill_loop.watch_timer)
+    skill_loop.watch_timer = nil
+  end
+end
+
+function skill_loop_hp_ratio()
+  if not icesus or not icesus.state then return 1.0 end
+  local v = icesus.state.vitals
+  if not v or not v.hpmax or v.hpmax == 0 then return 1.0 end
+  return v.hp / v.hpmax
+end
+
+function skill_loop_check_hp()
+  if not skill_loop or not skill_loop.active then return end
+
+  local ratio = skill_loop_hp_ratio()
+
+  if ratio &gt;= SKILL_LOOP_HP_FLOOR then
+    if skill_loop.paused then
+      skill_loop.paused = false
+      skill_loop_cancel_watch()
+      cecho("\n&lt;green&gt;[LOOP]&lt;reset&gt; HP recovered (" ..
+            math.floor(ratio * 100) .. "%) — resuming sacrifice loop.\n")
+    end
+    send(skill_loop.cmd, false)
+  else
+    if not skill_loop.paused then
+      skill_loop.paused = true
+      cecho("\n&lt;red&gt;[LOOP]&lt;reset&gt; HP at " ..
+            math.floor(ratio * 100) .. "% — sacrifice paused until above " ..
+            math.floor(SKILL_LOOP_HP_FLOOR * 100) .. "%.\n")
+    end
+
+    if not skill_loop.watch_timer then
+      skill_loop.watch_timer = tempTimer(SKILL_LOOP_WATCH_INTERVAL, function()
+        skill_loop.watch_timer = nil
+        if not skill_loop or not skill_loop.active then return end
+        if not icesus or not icesus.state or not icesus.state.inCombat then
+          skill_loop.active = false
+          skill_loop.paused = false
+          cecho("\n&lt;orange&gt;[LOOP]&lt;reset&gt; Loop stopped — left combat while paused.\n")
+          return
+        end
+        skill_loop_check_hp()
+      end, false)
+    end
+  end
+end
+
+-- Central entry point used by every skill alias.
+-- cmd      : full command string to send (e.g. "kick orc")
+-- sacrifice: boolean — use the HP-gated sacrifice path
+function skill_loop_start(cmd, sacrifice)
+  skill_loop           = skill_loop or {}
+  skill_loop.active    = true
+  skill_loop.paused    = false
+  skill_loop.sacrifice = sacrifice or false
+  skill_loop.cmd       = cmd
+  skill_loop.last_cmd  = cmd   -- remember for auto-start and "loop" alias
+
+  skill_loop_cancel_watch()
+  cecho("\n&lt;cyan&gt;[LOOP]&lt;reset&gt; Looping: &lt;white&gt;" .. cmd .. "&lt;reset&gt;\n")
+
+  if sacrifice then
+    skill_loop_check_hp()
+  else
+    send(cmd, false)
+  end
+end
+</script>
+					<eventHandlerList>
+						<string>sysLoadEvent</string>
+					</eventHandlerList>
+				</Script>
+				<Script isActive="yes" isFolder="no">
+					<name>skill-loop gmcp combat handler</name>
+					<packageName>skill-loop</packageName>
+					<script>-- Stop the loop whenever GMCP reports we've left combat.
+function skill_loop_on_status()
+  if not skill_loop or not skill_loop.active then return end
+  if not icesus or not icesus.state or not icesus.state.inCombat then
+    skill_loop.active = false
+    skill_loop.paused = false
+    skill_loop_cancel_watch()
+    cecho("\n&lt;orange&gt;[LOOP]&lt;reset&gt; Loop stopped — left combat.\n")
+  end
+end
+
+if skill_loop_status_handler then
+  pcall(killAnonymousEventHandler, skill_loop_status_handler)
+end
+skill_loop_status_handler = registerAnonymousEventHandler(
+  "gmcp.Char.Status", "skill_loop_on_status")
+</script>
+					<eventHandlerList>
+						<string>sysLoadEvent</string>
+					</eventHandlerList>
+				</Script>
+			</ScriptGroup>
+		</ScriptGroup>
+	</ScriptPackage>
+	<KeyPackage />
+</MudletPackage>
