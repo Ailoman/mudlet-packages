@@ -3,6 +3,260 @@ author = [[built with Claude]]
 description = [[Instance-aware inventory tracker, disposal advisor, inline annotator,
 and mob-safe auto-loot with shop/altar disposal for Icesus.
 
+### `imv`: the game's own categorised census (minventory) -- phase 1 (9.31)
+`minventory deep weight worn` lists every carried item -- loose, in every bag
+(nested), and worn/wielded -- grouped by the GAME's category (Weapons, Armour,
+Hearts, Food, Skins, ...) with a +/-/~ keep flag. It is an authoritative source
+for things the package used to reverse-engineer. Phase 1 (`imv`) is deliberately
+READ-ONLY -- it does not rebuild the location map yet -- and does two things:
+(1) CATEGORY learning. It fills an item's `sellCat` straight from the game's
+category (mapped to the shop-refusal strings, so shop accepts/rejects still
+match; Hearts and Food both map to the sac-only "food"). This is far more
+reliable than inferring category from appraisals, and it means hearts/food route
+to the altar with no learning appraisal at all. It only fills an unset or
+inferred category, never overriding an appraisal-confirmed one.
+(2) WORN-handle occupancy. Every worn/wielded item's head noun (e.g. a worn
+"Fabled silk cloak" -> `cloak`) is recorded so `shortestHandle` avoids that bare
+handle for a DIFFERENT item -- a second, general guard behind 9.30's show-id pick
+for the worn-collision problem. (Best-effort: a worn item whose handle diverges
+from its display name, like a "blade" that answers to `sword`, can't be derived
+from the name -- 9.30 remains the primary defense.) A robust minventory-line
+parser (category column, keep flag, weight columns, `|`/`| .` nesting, worn
+sections, and the package's own trailing annotation) underpins it. Regression:
+`h29.lua`. Phase 2 -- using `minventory deep` as the one-command map census to
+retire the multi-`l`-scan and the phantom/ghost class -- is the planned
+follow-up now that the parser is proven.
+
+### Worn items sharing a handle with ground/bagged items (9.30)
+`show id cloak` resolves to the item you are WEARING (inventory is searched
+first), and `show id ground` hands each ground item a disambiguated handle for
+exactly this reason -- it lists "cloth cloak" / "soft leather cloak", never the
+bare "cloak", because a worn Fabled silk cloak also answers to "cloak". The
+danger was on the disposal side: `shortestHandle` picks the shortest handle that
+is unique IN THE BAG, but it cannot see worn equipment, so a bagged/loose "cloth
+cloak" was disposed as bare "cloak" -- and an inventory-scoped `sell`/`sacrifice`
+sends that at the worn keeplist cloak. Fix: record the game's own show-id pick
+per item (`t.showIdHandle`) and prefer it in `shortestHandle`/`shortestRoomHandle`
+over any shorter generic alias. The show-id handle is unambiguous in scope by
+construction, so it can't collide with a worn item the map-only ambiguity check
+is blind to; numbered picks ("coat 2") are skipped as positional, and a show-id
+handle later proved bad falls back to the normal ladder. Regression: `h28.lua`.
+
+### Multi-corpse rooms + body-part-named corpses + a ghost broom (9.29)
+Corpse handling failed whenever a room held more than one corpse. `show id
+ground` numbers them -- `corpse 1`, `corpse 2` -- and the detector only matched
+the exact handle `corpse`, so none were recognised: no `dig grave`, and iloot
+then `get body`/`get yolk`-ed the corpses into the pack. Worse, some corpses show
+a body-part noun there ("cadaver", "yolk") and only reveal themselves in the
+`show id <item>` Names list ("corpse, remains, body, dead body, ..."). Fixes:
+(1) `handleIsCorpse` matches `corpse` and `corpse N`; (2) `namesAreCorpse` reads
+the full Names list, so body-part corpses are caught during full registration;
+(3) the dig decision now runs AFTER full registration so both signals count, and
+a detected corpse is flagged on the type (`t.corpse`, persisted) so later scans
+skip it without re-querying; (4) corpse types are dropped from the take list and
+never `get`-looted, and their generic names (body/remains/dead body) are never
+adopted as handles. One `dig grave` handles every corpse in the room at once.
+Regression: `h26.lua`.
+
+Also new: `ihandle forget <N|"name">` -- a broom for GHOST entries (an item the
+map lists that you don't actually have, e.g. a stale duplicate left by the
+pre-9.28 poisoning). It removes every phantom instance from the map and clears
+the stuck entry. Most ghosts also self-heal now: the next `ishop`/`isac` that
+scans the sale bag reconciles the map to the bag's real contents. Regression:
+`h27.lua`.
+
+### Stale duplicates stop poisoning good handles + stranding sacrifices (9.28)
+9.27 got sacrifices working (half plate 317 favour, scimitar 77 in play), but a
+live round exposed a vicious knock-on. An item can end up mapped in TWO places at
+once -- really in "treasure", with a stale duplicate still listed in a sale bag
+("loot"). Every later shop then tried `get scimitar from "loot"`, the game
+answered "You see no scimitar around here" (it is in treasure, not loot), and
+9.26 DEMOTED the handle as bad. Those were action-proven handles that had just
+worked, so the real copy in treasure lost every handle and became unsacrificeable
+-- and the same phantom entries produced "There was nothing to sacrifice" that
+tripped the stale-map guard and stranded the freshly-staged hearts.
+
+Two fixes. (1) A `You see no X` refusal on a move or a `sacrifice` with an
+ACTION-PROVEN handle now means "the item is not in that bag" -- the entry is a
+stale duplicate. Prune it and move on, WITHOUT demoting the handle (a proven
+handle does not stop naming its item). Only an unproven show-id/look candidate
+still demotes-and-retries. Regression: `h24.lua`. (2) The stale-map guard no
+longer bails while un-attempted stage-bag items remain in the queue, so phantoms
+from other bags can never strand the known-present items just staged into
+treasure. Regression: `h25.lua`.
+
+### Sacrifice the stage bag first + learn category from bulk sales (9.27)
+Two things from a live sell/sac round. (1) The bug: `isac` queued 11 sacrifices,
+the first three answered "There was nothing to sacrifice" (stale phantom entries
+the map still listed in loose/loot -- the persistent "N await altar" count), and
+the three-strikes stale-map guard then dropped the rest of the queue, stranding
+the real hearts that had just been staged into "treasure". Fix: `isacDispose`
+now sacrifices the STAGE BAG first (loose/other bags after), so the known-present
+items are consumed before any phantom can trip the guard -- the guard then only
+ever discards trailing phantoms, which is its job. Regression: `h22.lua`.
+(2) Category from what `sell all` sold: at a SPECIALISED shop (confirmed to buy
+exactly one category and to refuse at least one other), an item it actually sold
+can only be that category, so an uncategorised sold item is tagged with it. Only
+sold items reach this, so there is no phantom risk (unlike guessing from what
+stayed in the bag, which the ambiguous bulk refusals cannot disambiguate). The
+tag is provisional and a later per-item appraisal -- which names item AND
+category -- overrides it; `accepts` is still built from confirmed categories
+only, so the inference never feeds itself. `ishops` shows what each shop buys,
+refuses and pays. Regression: `h23.lua`.
+
+### The staging mover rules out bad bag handles too (9.26)
+A bag get refusal is the SAME string as a ground get -- `get axe from "loot" to
+"treasure"` answers "You see no 'axe' around here." -- so it already reached
+onNoSuchHandle, but the paced staging mover was not a claimant there: it only had
+the 8s timeout, so a refused bag handle stalled the whole staging run and then
+gave up without trying another. The mover now claims that refusal (new
+`moveHandleRefused`), demotes the handle for the type it deliberately tried to
+move, and re-sends the move with the next candidate down the ladder, bounded by
+HANDLE_RETRIES; an exhausted item is left in place and marked stuck. And a
+successful move now records its handle as action-proven, so a working bag handle
+stops being a mere show-id candidate and shadows the unproven ones. Regression:
+`h21.lua`. Together with 9.25 this closes the loop for BOTH ground and bag
+handling: candidates are tried, failures are ruled out for good, successes are
+promoted.
+
+### `show id` names are candidates, not proven handles (9.25)
+A `show id` name is a TARGETING alias ("Type any of those names to target this
+item"), and targeting is not handling: the parsers behind get/put/sell/sacrifice
+accept a narrower set. Proven in play -- `show id` lists "Murky grey scale mail"
+for an iron scale mail armour, yet `get murky grey scale mail` answers "You see
+no ... around here" while `get scale mail` works. So 9.19's "show id is
+authoritative" was wrong for object handling. Two fixes: (1) handle ranking is
+now act > id > look -- a handle a real action moved the item with outranks a
+show-id targeting candidate, so a successful `get scale mail` becomes the
+preferred handle instead of being shadowed by the appearance name forever. (2) A
+`show id`/`look` recognition can no longer clear a `bad`/`amb` verdict -- only a
+real action can. Before this, every `show id` re-adopted its names and wiped the
+demotion the last failed `get` had just learned, so the dead appearance-name was
+re-sent on every run (the "one of the handles does not move the item" report).
+Now a handle a handling verb ruled out STAYS ruled out across re-scans, and the
+retry ladder converges on a name that actually works. Regression: `h20.lua`.
+
+### Stage move survives renamed items -- no re-staging, no bag rescan (9.24)
+The one-command move (9.23) filed the item under whatever key its get-echo name
+resolved to. When that differed from the tracked type -- an item identified or
+renamed since it was stored, or any case where the echo form and the stored name
+normalise apart -- the item was neither removed from the sale bag nor filed in
+treasure, so it stayed put and every later `ishop` re-staged it (and the move
+never confirmed, so it timed out and used a different command on retry). Now a
+staging move in flight is attributed to the key we deliberately sent, exactly as
+the sac pipeline attributes by position, so the location map stays correct with
+NO bag rescan needed after selling/staging.
+
+### Less shuffling: one-command moves + selective shop staging (9.23)
+Two ways to cut the item-moving. (1) A bag-to-bag stage move is now ONE command
+-- `get <h> from "loot" to "treasure"` -- instead of a get then a put, so
+staging costs half what it did. onGetEcho treats a from+to get as a move
+(removes from the source, trusting the in-flight move's known source since the
+echo's `from` capture is polluted by the trailing `to`). (2) At a shop, staging
+now pulls out only the sac-routed items THIS keeper could actually buy: a
+sac-only category (food/hearts) or a category the shop is known to refuse won't
+be sold by `sell all` anyway, so it stays put. At a weapon shop only the
+sac-routed weapons move; the skins and hearts are left where they are. isac
+still stages everything at the altar (also via the one-command move).
+
+### `show id inventory` for loose handles (9.22)
+ishop and isac now run `show id inventory` before disposing, so every LOOSE item
+gets its exact parser handle in one command; the look-probe ladder then only has
+to cover BAGGED items (which show id cannot reach -- there is no command to look
+inside a sack, so bag contents stay on get/put-echo tracking). Fewer failed
+`sell`/`sacrifice`/`value` commands on loose items, so fewer retries.
+
+### Full handle registration via `show id <item>` (9.21)
+`show id ground` gives one handle per object; `show id <item>` gives the whole
+set -- "Stone studded heavy cloth gloves / Names: gloves, stone gloves". After
+the ground scan, iloot now queries `show id <item>` once per tracked room item
+(trash included) and files EVERY name, marking the type registered so it is
+never re-queried. This is what can finally separate items sharing a short
+handle: if a heart's set turns out to hold a specific "heart of X", collisions
+on bare `heart` become solvable. All names go in at the top HANDLE_SRC_ID tier.
+`inv.config.idFull` (default true) toggles it.
+
+### iloot digs corpses instead of trying to loot them (9.20)
+A corpse ("Shredded entrails of skeleton lord") was being ingested as an item
+and `get corpse`-d, which just fills a bag ("There is no room ... all bags full
+— leaving ... in room"). We never want to carry corpses. iloot now detects them
+the one reliable way -- `show id ground` gives a corpse the handle `corpse`
+whatever its display name -- and when any are present it sends `dig grave` first
+(which SPILLS their contents onto the floor), then re-loots the spill. Corpses
+are never added to the take list, and `corpse` is never adopted as a handle. A
+one-shot guard stops a re-dig loop if the grave command is wrong. Reuses the
+icorpse machinery; `inv.config.digCorpses` (default true) toggles it, and
+`icorpse dig <cmd>` still sets the grave command. (Manual corpse looting, e.g.
+for a quest, is untouched — turn digCorpses off or just do it by hand.)
+
+### `show id ground`: the parser's own handle oracle (9.19)
+Icesus has a command that ends the guessing: `show id ground` prints every object
+on the floor with the exact handle to type ("Name to type"). iloot now runs it
+instead of the look-probe ladder — one command gives a deterministic handle for
+every room item, so `get` stops missing. Its handles are recorded at a new top
+tier (HANDLE_SRC_ID, preferred over both look- and action-proven guesses) and a
+type's stored handle is overwritten by the parser's answer as it's seen, so the
+lists self-correct over time. The look-probe still runs as a fallback for
+anything show id doesn't cover. `iid` runs it by hand.
+
+Two deliberate limits. show id does NOT flag NPCs or fixtures (Ereldon, the
+fountain, the trashcan all appear with handles), so the what-to-loot decision
+still rests with the room scan's colour mob-filter, classify(), and the nonItems
+blacklist — show id only supplies the handle for items already chosen. And a
+handle is adopted ONLY for a type already tracked, so those fixture/NPC rows
+never invent junk types. (Bag interiors are still tracked via get/put echoes;
+show id only reaches the ground and loose inventory.)
+
+### Keep-section header varies — match both forms (9.18)
+The game prints the keeplist header two ways: "Keep:" in some listings and
+"Keeping (your keeplist -- these are not dropped, sold or given away):" in
+others (even from the same `i weight`). The Keep-marker trigger only matched
+"^Keep:$", so when the long form appeared the keep flag never set: every
+keeplist item (the named sacks, lanterns, sleeping bag, the Direkein vial
+container and its vials) was filed as LOOSE. ishop then tried to appraise and
+sell them ("You do not have nomad's sleeping bag"), and the route annotation was
+appended to them. The trigger now matches "^Keep(?:ing)?[ :]" — both forms — so
+the keep flag sets, those items go to the keep bucket (untouched by ishop/isac
+and un-annotated), and a stale loose entry from the bad scans is pruned on the
+next `i`/`i weight`. If your saved map already mis-filed some, just run `i` once
+after importing and it self-corrects.
+
+### Annotation fixes: forward order + plain `i` (9.17)
+Two bugs in 9.16's route-aware annotation. (1) Order was reversed
+("...snake] 253 df/l[ 0 s| 25 df|") because it now inserts three coloured
+segments and `insertText` inserts AT the cursor without advancing it, so the
+segments stacked backwards. Fixed by inserting them back-to-front (and the
+leading pad last) so they land forward as "[ s| df| route]", correctly
+right-justified. (2) A bare `i` showed no annotation — only `i weight` and
+`l "<bag>"` were wired. Plain `i` is now annotated too (loose non-keep items,
+per-litre from the stored volume of a prior weighing, `?` if never weighed), so
+inventory shows the same route info however you look at it.
+
+### Route-aware annotation, right-justified (9.16)
+The inline annotation dropped its fourth column. It was [ 68 s| 3 df| 85 s/l|
+4 df/l] -- both per-litre figures side by side, with no hint of what the item
+would actually DO. It is now [ 68 s| 3 df| 85 s/l], where the third column is the
+per-litre metric of the route the item is HEADED for: green "N s/l" when it will
+be sold, cyan "N df/l" when it will be sacrificed, and "learn" (yellow, needs an
+appraisal or favour reading), "drop", or "coin" for the rest. One glance at a
+scan now shows every disposal decision. The block is right-justified to the main
+window's edge (override with inv.config.annotRightCol) and fixed-width so the
+columns line up. Shown for loose (non-keep) items via `i weight` and for every
+disposal sack via `l "<bag>"`; keep items are left un-annotated.
+
+### ishop stages only the sale bags, not loose inventory (9.15)
+Staging moves sac-routed items out of the way before a bulk `sell all`. At a
+shop it only needs to clear the actual SALE bags (what `sell all from "loot"`
+would hit) — loose and keep items are never bulk-sold, so hauling them into
+treasure at a keeper is pure churn. A pack with 21 loose skins routed to the
+altar was moving all 21 bag-to-bag, one paced get/put at a time, right in front
+of the shopkeeper — slow, and it stalled on the no-reply timeout when the
+character was resting. ishop now passes `saleBagsOnly` to `stageSacItems`, so it
+leaves loose/keep items where they are; `isac` still stages everything (loose
+included) at the altar, where it belongs. NB: an altar-bound item is never sold
+by `ishop` — a skin worth 209 favour (~20,900 at dfToSilver 100) beats its 2,516
+sale price ~8×, so it correctly waits for `isac`.
+
 ### Favour-first disposal: learn favour before selling (9.14)
 disposeRoute used to sell an item on its silver figure whenever it had ANY sale
 value — even while its divine favour was UNMEASURED. That contradicts classify()
@@ -887,5 +1141,5 @@ Every command is echoed. Exclude items manually with `iloot exclude <name>`.
 Tuning: cutoffSL=100, dfToSilver=10, trashDiv=5, estN=3, probeMax=24.
 Data persists to icesus_inventory2.lua (autosave 2 min).
 ]]
-version = [[9.14]]
+version = [[9.31]]
 created = "2026-06-09T12:30:00+02:00"

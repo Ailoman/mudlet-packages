@@ -22,7 +22,7 @@
 elseif inv.scan then inv.iKeep() end</script>
 				<command /><packageName />
 				<regexCodeList>
-					<string>^Keep:$</string>
+					<string>^Keep(?:ing)?[ :]</string>
 				</regexCodeList>
 				<regexCodePropertyList>
 					<integer>1</integer>
@@ -122,7 +122,9 @@ elseif inv.scan then inv.iKeep() end</script>
 if inv.annotMode == "iweight" then inv.iwLine(L)
 elseif inv.annotMode == "sack" then inv.sackLine(L)
 elseif inv.scan and inv.scan.kind == "i" then inv.iLine(L)
-elseif inv.roomScan and inv.roomScan.active and inv.roomScan.atItems then inv.roomLine(L) end</script>
+elseif inv.roomScan and inv.roomScan.active and inv.roomScan.atItems then inv.roomLine(L) end
+if inv.showId and inv.showId.active then inv.showIdLine(matches[1]) end
+if inv.minv and inv.minv.active then inv.minvLine(matches[1]) end</script>
 				<command /><packageName />
 				<regexCodeList>
 					<string>^(.+)$</string>
@@ -498,7 +500,7 @@ inv.corpseHit(matches[2])</script>
 					<integer>1</integer>
 				</regexCodePropertyList>
 			</Trigger>
-		<Trigger isActive="yes" isFolder="no"><name>Bulk sell total</name><script>inv.onBulkSellTotal(matches[2], matches[3])</script><command /><packageName /><regexCodeList><string>^(.+?) (?:says:.*?you sold items for a total worth of|gives you money worth of) (\d+) silver</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger><Trigger isActive="yes" isFolder="no"><name>Vendor plain refusal</name><script>inv.onVendorSaysNoBuy(matches[2], matches[3])</script><command /><packageName /><regexCodeList><string>^([A-Z][\w '-]+) says: I don't buy ([\w ]+?)\.$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger></TriggerGroup>
+		<Trigger isActive="yes" isFolder="no"><name>Bulk sell total</name><script>inv.onBulkSellTotal(matches[2], matches[3])</script><command /><packageName /><regexCodeList><string>^(.+?) (?:says:.*?you sold items for a total worth of|gives you money worth of) (\d+) silver</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger><Trigger isActive="yes" isFolder="no"><name>Vendor plain refusal</name><script>inv.onVendorSaysNoBuy(matches[2], matches[3])</script><command /><packageName /><regexCodeList><string>^([A-Z][\w '-]+) says: I don't buy ([\w ]+?)\.$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger><Trigger isActive="yes" isFolder="no"><name>Show id header</name><script>inv.showIdStart()</script><command /><packageName /><regexCodeList><string>^Names recognized by the parser</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger><Trigger isActive="yes" isFolder="no"><name>Show id names</name><script>inv.idNamesLine(matches[2])</script><command /><packageName /><regexCodeList><string>^\s*Names:\s*(.+)$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger></TriggerGroup>
 	</TriggerPackage>
 	<TimerPackage /><KeyPackage />
 	<AliasPackage>
@@ -647,7 +649,7 @@ else cecho(string.format("\n&lt;cyan&gt;[inv]&lt;reset&gt; tracking %s | verbose
 				<command /><packageName />
 				<regex>^iprobe(?: (.+))?$</regex>
 			</Alias>
-		<Alias isActive="yes" isFolder="no"><name>istage</name><script>inv.stageSacItems()</script><command /><packageName /><regex>^istage$</regex></Alias><Alias isActive="yes" isFolder="no"><name>ibulk</name><script>inv.bulkCmd(matches[2] or "")</script><command /><packageName /><regex>^ibulk(?: (.+))?$</regex></Alias><Alias isActive="yes" isFolder="no"><name>inonitem</name><script>inv.nonItemCmd(matches[2] or "")</script><command /><packageName /><regex>^inonitem(?: (.+))?$</regex></Alias></AliasGroup>
+		<Alias isActive="yes" isFolder="no"><name>istage</name><script>inv.stageSacItems()</script><command /><packageName /><regex>^istage$</regex></Alias><Alias isActive="yes" isFolder="no"><name>ibulk</name><script>inv.bulkCmd(matches[2] or "")</script><command /><packageName /><regex>^ibulk(?: (.+))?$</regex></Alias><Alias isActive="yes" isFolder="no"><name>inonitem</name><script>inv.nonItemCmd(matches[2] or "")</script><command /><packageName /><regex>^inonitem(?: (.+))?$</regex></Alias><Alias isActive="yes" isFolder="no"><name>iid</name><script>inv.iidCmd()</script><command /><packageName /><regex>^iid$</regex></Alias><Alias isActive="yes" isFolder="no"><name>imv</name><script>inv.minvCmd()</script><command /><packageName /><regex>^imv$</regex></Alias></AliasGroup>
 	</AliasPackage>
 	<ActionPackage />
 	<ScriptPackage>
@@ -1468,8 +1470,21 @@ end
 --           hand-entered `ihandle ... force`) — actionable, trust it
 --   "look"  only the prober has seen it work — a CANDIDATE, not a handle
 -- "act" outranks "look" and never downgrades.
-inv.HANDLE_SRC_ACT  = "act"
-inv.HANDLE_SRC_LOOK = "look"
+-- `show id` gives the parser's TARGETING aliases ("Type any of those names to
+-- target this item"). Targeting is not handling: the parsers behind `get`,
+-- `put`, `sell` and `sacrifice` accept a NARROWER set. Proven in play --
+-- `show id` lists "Murky grey scale mail" for an iron scale mail armour, and
+-- `get murky grey scale mail` answers "You see no ... around here" while
+-- `get scale mail` works. So a `show id` name is a strong CANDIDATE (the
+-- parser's own words, including ones the blind ladder can't derive), ranked
+-- ABOVE a look guess but BELOW a handle a real action has proven. Only "act"
+-- means "a handling verb moved the item with this string"; that alone is
+-- trustworthy for object handling, and that alone can clear a `bad`/`amb`
+-- verdict (see handleRecordOk / handleRecordBad).
+inv.HANDLE_SRC_ID   = "id"    -- from `show id` — targeting-proven, a candidate
+inv.HANDLE_SRC_ACT  = "act"   -- a handling verb moved the item with it — trust it
+inv.HANDLE_SRC_LOOK = "look"  -- only `look` has seen it — the weakest candidate
+inv.HANDLE_RANK = { act = 3, id = 2, look = 1 }
 
 function inv.handleSrc(key, handle)
   local h = inv.handlesOf(key)
@@ -1493,9 +1508,11 @@ end
 function inv.handleList(key, scope)
   local h = inv.handlesOf(key)
   if not h then return {} end
-  local act, look = {}, {}
+  local id, act, look = {}, {}, {}
   for s in pairs(h.ok) do
-    if inv.handleSrc(key, s) == inv.HANDLE_SRC_ACT then act[#act+1] = s
+    local src = inv.handleSrc(key, s)
+    if src == inv.HANDLE_SRC_ID then id[#id+1] = s
+    elseif src == inv.HANDLE_SRC_ACT then act[#act+1] = s
     else look[#look+1] = s end
   end
   local function bySpecificity(t)
@@ -1507,14 +1524,18 @@ function inv.handleList(key, scope)
     end)
     return t
   end
+  -- Preference: a handle a real action has proven first (the only kind trusted
+  -- for handling), then `show id` targeting candidates, then look guesses.
   if scope == "all" then
-    bySpecificity(act); bySpecificity(look)
+    bySpecificity(act); bySpecificity(id); bySpecificity(look)
     local out = {}
     for _, s in ipairs(act)  do out[#out+1] = s end
+    for _, s in ipairs(id)   do out[#out+1] = s end
     for _, s in ipairs(look) do out[#out+1] = s end
     return out
   end
   if #act &gt; 0 then return bySpecificity(act) end
+  if #id  &gt; 0 then return bySpecificity(id)  end
   return bySpecificity(look)
 end
 
@@ -1534,20 +1555,38 @@ function inv.handleRecordOk(key, handle, src)
   local h = inv.handlesOf(key, true)
   if not h or not handle then return end
   src = src or inv.HANDLE_SRC_ACT
+  local rank = inv.HANDLE_RANK
+  -- Only a real ACTION disproves a handling verdict. A `show id` (targeting) or
+  -- `look` recognition is the permissive parser talking, so it must NOT
+  -- resurrect a handle a handling verb already ruled out (`bad`) -- otherwise
+  -- every `show id` clears the very demotion the last failed `get` just learned,
+  -- and the dead appearance-name is re-sent on every run forever. That
+  -- re-adoption loop is exactly the "one of the handles does not move the item"
+  -- report. A handle marked bad stays a candidate for nobody until an action
+  -- proves otherwise.
+  if src ~= inv.HANDLE_SRC_ACT and h.bad[handle] then return end
   local first = not h.ok[handle]
-  local upgraded = (src == inv.HANDLE_SRC_ACT)
-    and h.ok[handle] and h.src[handle] ~= inv.HANDLE_SRC_ACT
+  local upgraded = (not first) and (rank[src] or 0) &gt; (rank[h.src[handle]] or 0)
   h.ok[handle] = (h.ok[handle] or 0) + 1
-  -- never downgrade: a later look hit on an action-proven handle tells us
-  -- nothing we did not already know from the stronger evidence.
-  if src == inv.HANDLE_SRC_ACT or not h.src[handle] then h.src[handle] = src end
-  h.bad[handle] = nil
-  h.amb[handle] = nil
+  -- never downgrade: keep the strongest evidence seen (act &gt; id &gt; look). A later
+  -- look hit on an action-proven handle tells us nothing new; a `show id`
+  -- reading upgrades a look guess to a targeting candidate but never past a
+  -- handle a real action has moved the item with.
+  if not h.src[handle] or (rank[src] or 0) &gt; (rank[h.src[handle]] or 0) then
+    h.src[handle] = src
+  end
+  -- Clearing the negative verdicts is act-only, for the same reason as the
+  -- resurrection guard above: only a handling verb can retract "does not move
+  -- this item" / "reached a different item".
+  if src == inv.HANDLE_SRC_ACT then
+    h.bad[handle] = nil
+    h.amb[handle] = nil
+  end
   if first then
     local t = inv.types[key]
-    inv.note(string.format("handle %s for %s: '%s'",
-      src == inv.HANDLE_SRC_ACT and "confirmed" or "looks usable",
-      (t and t.name) or key, handle))
+    local how = (src == inv.HANDLE_SRC_ID) and "from show id"
+      or (src == inv.HANDLE_SRC_ACT) and "confirmed" or "looks usable"
+    inv.note(string.format("handle %s for %s: '%s'", how, (t and t.name) or key, handle))
     inv.save()
   elseif upgraded then
     local t = inv.types[key]
@@ -1892,6 +1931,46 @@ function inv.handleCmd(arg)
     return
   end
 
+  -- `ihandle forget &lt;N|"name"&gt;` — a GHOST: the map lists the item but it is not
+  -- actually there (a stale duplicate the pre-9.28 handle-poisoning left behind,
+  -- or an item disposed of outside the package). Remove every phantom instance
+  -- from the map and clear its stuck entry. Use when you KNOW you don't have it.
+  local fg = arg:match("^forget%s+(.+)$")
+  if fg then
+    fg = fg:gsub('^"(.*)"$', "%1"):gsub("^%s+", ""):gsub("%s+$", "")   -- allow a quoted name
+    local key
+    local n = tonumber(fg)
+    if n then
+      local s = inv.stuckList()[n]
+      if s then key = s.key end
+    end
+    if not key then
+      key = inv.key(fg)
+      if not (key and inv.types[key]) then
+        for k, t in pairs(inv.types) do
+          if k:find(fg:lower(), 1, true)
+             or (t.name and t.name:lower():find(fg:lower(), 1, true)) then key = k; break end
+        end
+      end
+    end
+    if not key then
+      inv.warn(string.format("'%s' is not a stuck item or tracked type — run 'ihandle' for the list.", fg))
+      return
+    end
+    local removed = 0
+    for cont in pairs(inv.loc) do
+      if cont ~= "keep" then
+        while inv.locRemove(cont, key, 1) do removed = removed + 1 end
+      end
+    end
+    inv.clearStuck(key)
+    inv.save()
+    cecho(string.format(
+      "\n&lt;green&gt;[ihandle]&lt;reset&gt; forgot &lt;white&gt;%s&lt;reset&gt; — removed %d phantom instance(s) from the map.\n",
+      (inv.types[key] and inv.types[key].name) or key, removed))
+    return
+  end
+
   local force = false
   if arg:match("%s+force$") then
     force = true
@@ -1923,6 +2002,7 @@ function inv.handleCmd(arg)
       inv.warn('        ihandle "Empty medium sized sack" sack of oil')
       inv.warn("        ...append  force  to record without the look check")
       inv.warn("        ihandle reset NAME                   -- forget every refusal for a type")
+      inv.warn("        ihandle forget 1                     -- drop a GHOST you don't actually have")
       return
     end
   end
@@ -2032,6 +2112,17 @@ if C.probeRoom    == nil then C.probeRoom    = true end   -- probe room items pr
 if C.probeQuiet   == nil then C.probeQuiet   = true end   -- gag probe output
 if C.probeMax     == nil then C.probeMax     = 24  end    -- candidates per run
 if C.probeRoomMax == nil then C.probeRoomMax = 10  end    -- candidates when in-room
+-- `show id ground` is the parser's own handle oracle (9.19): one command yields
+-- the exact handle for every ground object, so it replaces the look-probe
+-- ladder for room items. The probe stays as a fallback for anything it misses.
+if C.useShowId    == nil then C.useShowId    = true end
+-- Corpses are never looted. When `show id ground` tags one (it answers to
+-- `corpse` whatever its display name), iloot digs the grave first -- which
+-- spills the contents onto the floor -- then re-loots the spill.
+if C.digCorpses   == nil then C.digCorpses   = true end
+-- Query `show id &lt;item&gt;` once per tracked room item (trash included) for the
+-- full alias set, so short-handle collisions can be separated by a longer name.
+if C.idFull       == nil then C.idFull       = true end
 
 -- Lines that can drift into a capture from elsewhere (movement, autosave,
 -- channels). Dropped before fingerprinting.
@@ -2542,9 +2633,22 @@ function inv.shortestHandle(container, key)
 
   local confirmed = inv.handleList(key)
   if #confirmed &gt; 0 then
+    -- Prefer the game's own show-id pick over any SHORTER generic alias: it is
+    -- unambiguous in scope by construction, so it can't collide with a worn item
+    -- that uniqueIn() (which only sees the location map) is blind to.
+    local sid = inv.types[key] and inv.types[key].showIdHandle
+    if sid and not inv.handleIsBad(key, sid) and not inv.ambBlocks(key, sid, ctx)
+       and uniqueIn(sid) then
+      for _, c in ipairs(confirmed) do if c == sid then return sid end end
+    end
     for i = #confirmed, 1, -1 do              -- shortest first
       local c = confirmed[i]
-      if not inv.ambBlocks(key, c, ctx) and uniqueIn(c) then return c end
+      -- ...but never a bare handle a WORN item also answers to (it would reach
+      -- the worn item under an inventory-scoped verb); skip it while a more
+      -- specific handle remains, which the loop keeps looking for.
+      if not inv.ambBlocks(key, c, ctx) and uniqueIn(c) and not inv.wornClash(c) then
+        return c
+      end
     end
     return confirmed[1]                       -- most specific proven
   end
@@ -3599,11 +3703,14 @@ function inv.onSacNothing()
   local e = inv.sacInFlight; inv.sacInFlight = nil
   if not e then return end
 
-  -- "Nothing to sacrifice" has two causes: the item is not there, or the
-  -- handle does not name it. Try the next handle once before concluding the
-  -- map is stale — a display name like "piece of rotten bread" fails here
-  -- while three of them sit in the bag.
-  if e.handle then
+  -- "Nothing to sacrifice" has two causes: the item is not there, or the handle
+  -- does not name it. An ACTION-PROVEN handle already names the item, so this is
+  -- the first case: the item is not in e.container -- a phantom map entry. Prune
+  -- it and move on WITHOUT trying other handles or demoting (same rule as the
+  -- staging mover). Only an UNPROVEN handle earns a retry down the ladder -- a
+  -- display name like "piece of rotten bread" that `look` blessed but the altar
+  -- rejects, while three of them sit in the bag.
+  if e.handle and not inv.handleActProven(e.key, e.handle) then
     local tried = e.tried or {}
     tried[e.handle] = true
     local n = 0
@@ -3626,7 +3733,17 @@ function inv.onSacNothing()
   if e.container then inv.locRemove(e.container, e.key, 1) end
   inv.sacMisses = inv.sacMisses + 1
   if inv.sacStats then inv.sacStats.missing = inv.sacStats.missing + 1 end
-  if inv.sacMisses &gt;= (inv.config.sacMaxMiss or 3) then
+  -- The stale-map guard stops us grinding through a long tail of phantoms -- but
+  -- it must NOT strand the freshly-staged, known-present items in the stage bag.
+  -- Bail only once no un-attempted stage-bag entry remains in the queue; until
+  -- then keep going so those get their sacrifice. (Each phantom miss above prunes
+  -- itself from the map, so the run still terminates.)
+  local dst = inv.config.sacStageBag or "treasure"
+  local stageLeft = false
+  for _, q in ipairs(inv.sacQueue) do
+    if q.container == dst then stageLeft = true; break end
+  end
+  if inv.sacMisses &gt;= (inv.config.sacMaxMiss or 3) and not stageLeft then
     local left = #inv.sacQueue
     inv.sacReset(); inv.save()
     inv.warn(string.format(
@@ -3717,6 +3834,31 @@ function inv.isCorpseText(txt)
   if not txt then return false end
   txt = txt:lower()
   return txt:find("corpse") ~= nil or txt:find("dead body") ~= nil
+end
+
+-- A `show id ground` handle names a corpse when it is `corpse` or a numbered
+-- `corpse 1`/`corpse 2`... (multi-corpse rooms number them). Some corpses show a
+-- body-part noun here instead ("cadaver", "yolk", "entrails") and are only
+-- revealed by the `show id &lt;item&gt;` Names list -- see inv.namesAreCorpse.
+function inv.handleIsCorpse(handle)
+  return handle ~= nil and handle:match("^corpse%s*%d*$") ~= nil
+end
+
+-- A corpse's full alias set (`show id &lt;item&gt;` -&gt; "Names: corpse, remains, body,
+-- dead body, &lt;noun&gt;") always carries these generic body words. Any of them,
+-- standing alone as one of the comma-separated names, marks the item a corpse.
+-- (A real item named "... body ..." keeps that inside a longer name, so it is
+-- the standalone name that discriminates.)
+function inv.namesAreCorpse(list)
+  if not list then return false end
+  for name in list:gmatch("[^,]+") do
+    name = name:gsub("^%s+", ""):gsub("%s+$", ""):lower()
+    if name == "corpse" or name == "dead body" or name == "remains"
+       or name == "body" or name == "carcass" or name == "carrion" then
+      return true
+    end
+  end
+  return false
 end
 
 -- "| Goblin's death report (1473 exp)" / "This is the dead body of goblin."
@@ -3819,53 +3961,94 @@ end
 -- The main `i` listing is NOT annotated (no weights there); use `i weight`.
 inv.annotMode = nil
 
--- Build the annotation for a specific sighting: prefer that variant's own
--- figures over the pooled ones.
-function inv.annotationFor(key, rawname)
+-- ---- Route-aware annotation (9.16) -----------------------------------
+-- Old form: [ 68 s|  3 df| 85 s/l|  4 df/l] -- four columns, both per-litre
+-- figures side by side, no indication of what the item will actually DO.
+-- New form: [ 68 s|  3 df|    85 s/l] -- the third column is the per-litre
+-- metric of the route the item is HEADED for (s/l coloured green when it will
+-- be sold, df/l coloured cyan when sacrificed, "drop"/"learn"/"coin" for the
+-- rest), so one glance at a listing shows every disposal decision. Fixed field
+-- widths keep the column aligned once the whole block is right-justified.
+inv.ANNOT_W = 29   -- total plain width of one annotation, for alignment
+
+-- Resolve the figures to display for a sighting: a variant's own numbers win.
+function inv.annotFigures(key, rawname)
   local t = inv.types[key]
-  if not t then return inv.annotationText(nil) end
+  if not t then return nil end
   local v = inv.variantOf(key, rawname, false)
+  local src = t
   if v and v ~= t and (v.sell or v.sac) then
-    return inv.annotationText({
-      sell = v.sell or t.sell, sac = v.sac or t.sac,
-      volume = t.volume, noSell = t.noSell,
-    })
+    src = { sell = v.sell or t.sell, sac = v.sac or t.sac,
+            volume = t.volume, noSell = t.noSell, noSac = t.noSac, sellCat = t.sellCat }
   end
-  return inv.annotationText(t)
+  local sell = src.sell and src.sell.avg or nil
+  local sac  = src.sac  and src.sac.avg  or nil
+  local voll = src.volume and src.volume &gt; 0 and (src.volume/1000) or nil
+  return sell, sac, voll
 end
 
-function inv.annotationText(t)
-  -- an item whose category no shop buys has no silver answer to wait for
-  if t and t.noSell and not (t.sell and t.sell.avg) then
-    local sac  = t and t.sac and t.sac.avg or nil
-    local voll = t and t.volume and t.volume &gt; 0 and (t.volume/1000) or nil
-    local dl   = (sac and voll) and (sac/voll) or nil
-    local function g(v,w) local x = v and string.format("%.0f",v) or "?"
-      return string.rep(" ", math.max(0,w-#x))..x end
-    return string.format("[  n/a|%s df|  n/a|%s df/l]", g(sac,5), g(dl,4))
-  end
-  local sell = t and t.sell and t.sell.avg or nil
-  local sac  = t and t.sac  and t.sac.avg  or nil
-  local voll = t and t.volume and t.volume &gt; 0 and (t.volume/1000) or nil
+-- The third column: the route's own per-litre metric, plus its colour.
+function inv.annotRoute(key, sell, sac, voll)
+  local W = 10
+  local function pad(s) return string.rep(" ", math.max(0, W-#s))..s end
+  if inv.coinInfo(key) then return pad("coin"), "ansi_yellow" end
+  local route = inv.disposeRoute(key)
   local sl = (sell and voll) and (sell/voll) or nil
   local dl = (sac  and voll) and (sac /voll) or nil
-  local function f(v,w) local s=v and string.format("%.0f",v) or "?"
-    return string.rep(" ", math.max(0,w-#s))..s end
-  return string.format("[%s s|%s df|%s s/l|%s df/l]", f(sell,5), f(sac,5), f(sl,4), f(dl,4))
+  if route == "sell" then
+    return pad((sl and string.format("%.0f", sl) or "?").." s/l"), "ansi_green"
+  elseif route == "sac" then
+    return pad((dl and string.format("%.0f", dl) or "?").." df/l"), "ansi_cyan"
+  elseif route == "drop" then
+    return pad("drop"), "ansi_light_black"
+  else -- "unknown": needs an appraisal and/or a favour reading
+    return pad("learn"), "ansi_yellow"
+  end
 end
 
-function inv.annotateLine(rawname)
+-- Segments to insert: {text, color}. Kept separate so annotateLine can colour
+-- the route column without inline colour codes throwing off the width maths.
+function inv.annotSegments(key, rawname)
+  local sell, sac, voll = inv.annotFigures(key, rawname)
+  local function rj(v, w) local s = v and string.format("%.0f", v) or "?"
+    return string.rep(" ", math.max(0, w-#s))..s end
+  local field, color = inv.annotRoute(key, sell, sac, voll)
+  return {
+    { text = string.format("[%s s|%s df|", rj(sell, 5), rj(sac, 5)), color = "ansi_white" },
+    { text = field, color = color },
+    { text = "]", color = "ansi_white" },
+  }
+end
+
+function inv.annotateLine(rawname, isKeep)
   if not inv.config.annotate then return end
+  if isKeep then return end   -- kept items are not disposal candidates
   if not (insertText and moveCursor and getLineNumber and getCurrentLine) then return end
   local key = inv.key(rawname); if not key then return end
   local cur = getCurrentLine() or ""
-  local startCol = inv.config.annotCol or 50
-  local pad = math.max(2, startCol - #cur)
-  local suffix = string.rep(" ", pad) .. inv.annotationFor(key, rawname)
+
+  -- Right-justify to the window's right edge (as far right as it fits), or to
+  -- an explicit column if the player pinned one with `inv.config.annotRightCol`.
+  local rightCol = inv.config.annotRightCol
+  if not rightCol and getWindowWrap then
+    local ok, w = pcall(getWindowWrap, "main")
+    if ok and type(w) == "number" and w &gt; 40 then rightCol = w - 1 end
+  end
+  rightCol = rightCol or 100
+  local pad = math.max(2, rightCol - #cur - inv.ANNOT_W)
+
   moveCursor(#cur, getLineNumber())
-  if fg then fg("ansi_white") end
-  insertText(suffix)
+  -- insertText inserts AT the cursor and does NOT advance it, so successive
+  -- inserts stack in REVERSE. Insert the coloured segments back-to-front, then
+  -- the leading pad last, so the block lands in forward order:
+  -- &lt;pad&gt;[ s| df| route].
+  local segs = inv.annotSegments(key, rawname)
+  for i = #segs, 1, -1 do
+    if fg then fg(segs[i].color or "ansi_white") end
+    insertText(segs[i].text)
+  end
   if resetFormat then resetFormat() end
+  insertText(string.rep(" ", pad))
   if moveCursorEnd then moveCursorEnd() end
 end
 
@@ -3884,6 +4067,9 @@ function inv.onPrompt()
     if inv.roomScan.sawRoom then inv.roomScanEnd() end
   end
   if inv.scan then inv.scanEnd() end
+  -- close a show id block on the prompt that follows it — but only once its
+  -- header has arrived, so a prompt from a PRIOR command cannot abort it early.
+  if inv.showId and inv.showId.active then inv.showIdFinish() end
   inv.annotMode = nil
   inv.sacArming = false
   -- The shopkeeper's identity deliberately SURVIVES the prompt: a sale never
@@ -3921,7 +4107,9 @@ function inv.iwLine(raw)
   if not (mass and name) then return end
   local qty = tonumber(name:match("^(%d+)%s*x%s")) or 1
   inv.scanItem(name, qty, tonumber(mass), tonumber(vol))
-  inv.annotateLine(name)
+  -- Loose inventory lists carried items AND the keep section; only the loose,
+  -- non-keep items are disposal candidates, so keep items go un-annotated.
+  inv.annotateLine(name, inv.scan and inv.scan.inKeep)
 end
 
 -- sack contents: "It contains:" opens; bare item lines; summary closes.
@@ -3967,8 +4155,10 @@ function inv.sackLine(raw)
   inv.annotateLine(raw)
 end
 
--- plain `i` listing: used only to set keep flags + validate counts (no
--- annotation, no weights). carry line opens, Keep: marks, prompt closes.
+-- plain `i` listing: sets keep flags + validates counts. It carries no weights,
+-- so per-litre figures come from the stored volume of a prior `i weight`; a type
+-- never weighed simply shows `?` in the s/l column. Loose (non-keep) items are
+-- annotated here too, so a bare `i` shows the same route info as `i weight`.
 function inv.iStart() inv.scanStart("i") end
 function inv.iKeep()  inv.scanKeepMark() end
 function inv.iLine(raw)
@@ -3978,6 +4168,316 @@ function inv.iLine(raw)
      or raw:find("^Keep:") or raw:match("^%s*$") then return end
   local qty = tonumber(raw:match("^%s*(%d+)%s*x%s")) or 1
   inv.scanItem(raw, qty, nil, nil)
+  inv.annotateLine(raw, inv.scan and inv.scan.inKeep)
+end
+
+-- ---- show id: the parser's own handle oracle (9.19) ------------------
+-- `show id ground` lists every object on the floor with the exact handle to
+-- type -- its "Name to type" column -- so it replaces the whole look-probe
+-- ladder for room items with ONE command. Its handles are recorded at the top
+-- HANDLE_SRC_ID tier and preferred over every guess. It does NOT flag NPCs or
+-- fixtures, so the what-to-loot decision stays with the room scan + classify +
+-- nonItems filter; show id only supplies the handle for items we already chose
+-- to take, and a handle is recorded ONLY for a type we already track (so the
+-- fountain/lamp/NPC rows do not invent junk types).
+--
+--     Names recognized by the parser, on the ground:
+--       Item                     Name to type
+--       Scrolled letter          scrolled letter
+--       Ereldon, the local sage  ereldon
+--     Use 'show id &lt;object&gt;' to see every name for a single item.
+inv.showId = nil
+inv.showIdTimer = nil
+
+function inv.showIdRun(scope, onDone, report)
+  if inv.showId then if onDone then onDone() end; return end   -- one at a time
+  scope = scope or "ground"
+  inv.showId = { active = false, scope = scope, onDone = onDone, n = 0, report = report,
+                 sawCorpse = false, corpses = {} }
+  local cmd = (scope == "inventory") and "show id inventory" or "show id ground"
+  cecho("\n&lt;grey&gt;[iid]&lt;reset&gt; &lt;cyan&gt;"..cmd.."&lt;reset&gt;")
+  send(cmd, false)
+  if inv.showIdTimer then killTimer(inv.showIdTimer) end
+  inv.showIdTimer = tempTimer(6, function()
+    if inv.showId then inv.showIdFinish() end
+  end)
+end
+
+function inv.showIdStart() if inv.showId then inv.showId.active = true end end
+
+function inv.showIdLine(raw)
+  if not (inv.showId and inv.showId.active) then return end
+  if raw:find("^Use 'show id") then return inv.showIdFinish() end   -- footer
+  if raw:match("^%s*$") or raw:find("^Names recognized") then return end
+  if raw:match("^%s*Item%s%s+Name to type") then return end          -- column header
+  -- "&lt;display&gt;   &lt;handle&gt;": split on the column gap (2+ spaces). The handle may
+  -- itself be several single-spaced words ("scrolled letter").
+  local disp, handle = raw:match("^%s*(.-)%s%s+(%S.*)$")
+  if not (disp and handle) then return end
+  disp   = disp:gsub("%s+$", "")
+  handle = handle:gsub("%s+$", ""):lower()
+  if disp == "" or handle == "" then return end
+  -- A corpse's ground handle is `corpse`, or `corpse 1`/`corpse 2`... when the
+  -- room holds several. We never loot corpses: flag the room so iloot digs the
+  -- grave (which spills the contents) instead, mark the type persistently so a
+  -- later scan knows without re-querying, and do NOT adopt the handle. (Corpses
+  -- that show a body-part noun here instead -- "cadaver", "yolk" -- are caught
+  -- from their Names list in idNamesLine.)
+  if inv.handleIsCorpse(handle) then
+    inv.showId.sawCorpse = true
+    local ck = inv.key(disp)
+    if ck then
+      inv.showId.corpses[ck] = true
+      if inv.types[ck] then inv.types[ck].corpse = true end
+    end
+    return
+  end
+  local key = inv.key(disp)
+  -- adopt the handle only for a type we already track (an item we scanned);
+  -- fixtures and NPCs listed here are not turned into tracked types.
+  if key and inv.types[key] then
+    inv.handleRecordOk(key, handle, inv.HANDLE_SRC_ID)
+    -- Remember the game's OWN disambiguated pick for this object. `show id`
+    -- chose a handle that is unambiguous in its scope -- it lists "cloth cloak",
+    -- not the shared "cloak", precisely because a worn (or other) cloak also
+    -- answers to "cloak". Prefer this pick for actions so a shorter generic alias
+    -- can't send an inventory-scoped verb (sell/sacrifice/put) at the wrong item
+    -- -- e.g. the WORN keeplist cloak, which the map-only ambiguity check cannot
+    -- see. Skip numbered picks ("coat 2"): those are positional and go stale.
+    if not handle:match("%d$") then inv.types[key].showIdHandle = handle end
+    inv.showId.n = inv.showId.n + 1
+  end
+end
+
+function inv.showIdFinish()
+  local s = inv.showId; inv.showId = nil
+  if inv.showIdTimer then killTimer(inv.showIdTimer); inv.showIdTimer = nil end
+  if not s then return end
+  if s.n &gt; 0 and s.report then
+    cecho(string.format("\n&lt;grey&gt;[iid]&lt;reset&gt; learned/updated handles for &lt;green&gt;%d&lt;reset&gt; tracked item(s).\n", s.n))
+  end
+  if s.n &gt; 0 then inv.save() end
+  local cb = s.onDone
+  if cb then inv.deferStep(function() cb(s) end) end
+end
+
+-- iid: run `show id ground` by hand to refresh handles for the current room.
+function inv.iidCmd(arg)
+  if inv.showId then inv.warn("a show-id read is already in progress."); return end
+  inv.showIdRun("ground", nil, true)
+end
+
+-- ---- minventory: the game's own categorised, keep-aware census (9.31) --
+-- `minventory deep weight worn` lists every carried item -- loose, in every bag
+-- (nested), and worn/wielded -- grouped by the GAME's category (Weapons, Armour,
+-- Hearts, Food, Skins, ...), each flagged +/-/~ for keep status. That is a
+-- direct, authoritative source for two things the package used to reverse-
+-- engineer: an item's disposal CATEGORY, and which handles are OCCUPIED by worn
+-- gear (so an inventory verb can't misfire on them -- the 9.30 cloak problem).
+--
+-- Phase 1 is deliberately READ-ONLY: it learns categories and worn nouns and
+-- reports, but does NOT rebuild the location map (that nesting reconcile is a
+-- larger, riskier follow-up). The existing l-scan census stays in charge.
+
+-- Head noun of a display name, matching the game's handle ("Fabled silk cloak of
+-- barbarian lords" -&gt; "cloak"): drop named "..."/&lt;glow&gt;/(parenthetical) and the
+-- "of ..." qualifier, take the last remaining word.
+function inv.headNounOf(name)
+  local n = (name or ""):lower()
+  n = n:gsub('%s+named%s+".-"', ""):gsub("%s*&lt;[^&gt;]*&gt;", ""):gsub("%s*%b()", "")
+  n = n:gsub("%s+of%s+.*$", ""):gsub("%s+$", "")
+  return n:match("(%S+)%s*$") or n
+end
+
+-- minventory category -&gt; the package's sellCat, using the SAME strings the shop
+-- refusals produce ("I don't buy armours") so shop.accepts/rejects still match.
+-- Hearts and Food both map to "food" (sac-only, per config.sacOnlyCats).
+inv.minvCatMap = {
+  weapons="weapons", armour="armours", ammo="ammo",
+  food="food", hearts="food", skins="skins", drink="drink", treasure="treasure",
+}
+
+function inv.minvStart()
+  inv.minv = { active=true, cat=nil, section="pre",
+               catN=0, wornNouns={}, wornN=0 }
+end
+
+-- Parse one minventory line into its fields (see minv_proto for the grammar).
+function inv.minvParse(raw, st)
+  local line = raw
+  line = line:gsub("%s*%[[^%]]-df|[^%]]-%]%s*$", "")          -- strip our annotation
+  local div = line:match("^%s*%-+%s*(%a+)%s*%-+%s*$")
+  if div then st.section = div:lower(); return { divider = div:lower() } end
+  if line:match("^You are carrying") or line:match("^Of that,")
+     or line:match("^Money:") or line:match("%d+/%d+HP")
+     or line:match("^%s*$") then return nil end
+  local cat = line:match("^%s*(%a+):")
+  local rest
+  if cat then st.cat = cat:lower(); rest = line:gsub("^%s*%a+:%s*", "")
+  else rest = line:gsub("^%s+", "") end
+  local body = rest:match("^[%so%.]*%d[%d%.]*kg%s+%d[%d%.]*l%s+(.*)$")   -- weight cols
+  if body then rest = body end
+  local keep = rest:match("^([%+%-~])")
+  if keep then rest = rest:gsub("^[%+%-~]%s*", "") end
+  local depth = 0
+  local bar = rest:match("^|%s*")
+  if bar then depth = 1; rest = rest:sub(#bar + 1)
+    while true do local d = rest:match("^%.%s*"); if not d then break end
+      depth = depth + 1; rest = rest:sub(#d + 1) end
+  end
+  local qty = tonumber(rest:match("^(%d+)x%s+")) or 1
+  rest = rest:gsub("^%d+x%s+", "")
+  local container = rest:match("%[[=%s]*%]%s*$") ~= nil
+  rest = rest:gsub("%s*%[[=%s]*%]%s*$", ""):gsub("%s+$", "")
+  if rest == "" then return nil end
+  local worn = (st.section=="wielded" or st.section=="worn"
+                or st.cat=="wielded" or st.cat=="worn")
+  return { cat=st.cat, keep=keep, depth=depth, qty=qty, name=rest,
+           container=container, worn=worn }
+end
+
+function inv.minvLine(raw)
+  local st = inv.minv; if not (st and st.active) then return end
+  local prompt = raw:match("%d+/%d+HP")
+  local r = inv.minvParse(raw, st)
+  if not r then if prompt then inv.minvFinish() end; return end
+  if r.divider then return end
+  if r.worn then
+    -- a worn/wielded item: its head noun is a handle an inventory verb could
+    -- reach, so record it as OCCUPIED. Do not touch its category or the map.
+    local noun = inv.headNounOf(r.name)
+    if noun and noun ~= "" and not st.wornNouns[noun] then
+      st.wornNouns[noun] = true; st.wornN = st.wornN + 1
+    end
+    return
+  end
+  if r.container then return end                 -- a bag, not a disposable item
+  -- category learning: fill sellCat for a type we already track. minventory is
+  -- the game's own answer, so it also overrides a merely INFERRED category, but
+  -- never an appraisal-confirmed one (leave that alone).
+  local sc = inv.minvCatMap[r.cat or ""]
+  if sc then
+    local key = inv.key(r.name)
+    local t = key and inv.types[key]
+    if t and (not t.sellCat or t.sellCatInferred) and t.sellCat ~= sc then
+      t.sellCat = sc; t.sellCatInferred = nil
+      st.catN = st.catN + 1
+    elseif t and not t.sellCat then
+      t.sellCat = sc; t.sellCatInferred = nil; st.catN = st.catN + 1
+    end
+  end
+end
+
+function inv.minvFinish()
+  local st = inv.minv; inv.minv = nil
+  if not st then return end
+  if inv.minvTimer then killTimer(inv.minvTimer); inv.minvTimer = nil end
+  -- commit the worn-noun set (replace, so unequipped gear stops blocking)
+  inv.config.wornNouns = st.wornNouns
+  inv.save()
+  cecho(string.format(
+    "\n&lt;grey&gt;[imv]&lt;reset&gt; categorised &lt;green&gt;%d&lt;reset&gt; item type(s); noted &lt;green&gt;%d&lt;reset&gt; worn handle(s).\n",
+    st.catN, st.wornN))
+  local cb = st.onDone; if cb then inv.deferStep(cb) end
+end
+
+-- imv: run `minventory deep worn` and apply the learning above.
+function inv.minvRun(onDone)
+  if inv.minv then if onDone then onDone() end; return end
+  inv.minvStart(); inv.minv.onDone = onDone
+  local cmd = "minventory deep worn"
+  cecho("\n&lt;grey&gt;[imv]&lt;reset&gt; &lt;cyan&gt;"..cmd.."&lt;reset&gt;")
+  send(cmd, false)
+  if inv.minvTimer then killTimer(inv.minvTimer) end
+  inv.minvTimer = tempTimer(6, function() if inv.minv then inv.minvFinish() end end)
+end
+
+function inv.minvCmd() inv.minvRun() end
+
+-- Is `handle` a bare string a WORN item also answers to? Sending it to an
+-- inventory-scoped verb (sell/sacrifice/put/look) would risk hitting the worn
+-- item, so disposal avoids it when a more specific handle exists (9.30/9.31).
+function inv.wornClash(handle)
+  return inv.config.wornNouns and handle and inv.config.wornNouns[handle] == true
+end
+
+-- ---- Full handle registration: `show id &lt;item&gt;` (9.21) ---------------
+-- `show id ground` gives ONE handle per object; `show id &lt;item&gt;` gives the
+-- WHOLE set:
+--     Stone studded heavy cloth gloves
+--       Names: gloves, stone gloves
+-- We query it once per type (idFull flag) for every tracked room item -- trash
+-- included -- so the full alias set is on file. That is what can finally
+-- separate items that share a short handle: if a heart's set turns out to hold
+-- a specific "heart of troll", collisions on bare `heart` are solvable.
+inv.idQueue = {}
+inv.idInFlight = nil
+inv.idTimer = nil
+inv.idOnDone = nil
+
+function inv.handleIdFull(key) local h = inv.handlesOf(key); return h and h.idFull == true end
+
+function inv.idFullRun(keys, onDone)
+  inv.idQueue = {}
+  if inv.config.idFull then
+    local seen = {}
+    for _, k in ipairs(keys or {}) do
+      if not seen[k] and not inv.coinInfo(k) and not inv.config.nonItems[k]
+         and not inv.handleIdFull(k) then
+        local h = inv.handleKnown(k)   -- a handle to address `show id` with
+        if h then seen[k] = true; inv.idQueue[#inv.idQueue+1] = { key = k, handle = h } end
+      end
+    end
+  end
+  if #inv.idQueue == 0 then if onDone then onDone() end; return end
+  inv.idOnDone = onDone
+  inv.idSendNext()
+end
+
+function inv.idSendNext()
+  if inv.idTimer then killTimer(inv.idTimer); inv.idTimer = nil end
+  local e = table.remove(inv.idQueue, 1)
+  if not e then
+    inv.idInFlight = nil
+    local cb = inv.idOnDone; inv.idOnDone = nil
+    inv.save()
+    if cb then cb() end
+    return
+  end
+  inv.idInFlight = e
+  send("show id " .. e.handle, false)
+  inv.idTimer = tempTimer(4, function()
+    if inv.idInFlight == e then inv.idInFlight = nil; inv.deferStep(inv.idSendNext) end
+  end)
+end
+
+-- "  Names: a, b, c" — record every name for the in-flight type and mark it
+-- fully registered so it is never re-queried.
+function inv.idNamesLine(raw)
+  local e = inv.idInFlight
+  if not e then return end
+  local list = raw:match("Names:%s*(.+)$") or raw
+  if not list then return end
+  -- The Names list is the reliable corpse tell: a body-part-named corpse
+  -- ("cadaver"/"yolk") whose ground handle gave nothing away still lists
+  -- "corpse, remains, body, dead body" here. Flag the type as a corpse and adopt
+  -- NONE of these as handles -- they are generic and shared across every corpse,
+  -- and iloot digs corpses rather than handling them.
+  if inv.namesAreCorpse(list) then
+    if inv.types[e.key] then inv.types[e.key].corpse = true end
+    local h = inv.handlesOf(e.key, true); if h then h.idFull = true end
+    inv.idInFlight = nil
+    return inv.deferStep(inv.idSendNext)
+  end
+  for name in list:gmatch("[^,]+") do
+    name = name:gsub("^%s+", ""):gsub("%s+$", ""):lower()
+    if name ~= "" and name ~= "corpse" then
+      inv.handleRecordOk(e.key, name, inv.HANDLE_SRC_ID)
+    end
+  end
+  local h = inv.handlesOf(e.key, true); if h then h.idFull = true end
+  inv.idInFlight = nil
+  inv.deferStep(inv.idSendNext)
 end
 
 -- ---- Reporting --------------------------------------------------------
@@ -4321,13 +4821,32 @@ function inv.shopNoteDeal(key, silver)
   sh.accepts = sh.accepts or {}
   sh.price   = sh.price   or {}
   local t = inv.types[key]
-  if t and t.sellCat then
+  -- accepts is built from CONFIRMED categories only (appraisal- or name-tagged),
+  -- never from an inferred one, so the inference below can't feed itself.
+  if t and t.sellCat and not t.sellCatInferred then
     sh.accepts[t.sellCat] = true
     sh.rejects[t.sellCat] = nil
   end
   silver = tonumber(silver)
   if silver and silver &gt; 0 and (sh.price[key] or 0) &lt; silver then
     sh.price[key] = silver
+  end
+  -- Learn the item's category from the sale itself (what `sell all` actually
+  -- sold). Only safe at a SPECIALISED shop: its confirmed `accepts` is exactly
+  -- one category AND it has refused at least one other, so an item it just
+  -- BOUGHT can only be that one category. Sold items are real (the game said
+  -- "You sell X"), so this carries no phantom risk, unlike guessing from what
+  -- stayed in the bag. Marked inferred so a later per-item appraisal -- which
+  -- names item AND category unambiguously -- still overrides it.
+  if t and not t.sellCat then
+    local only, n = nil, 0
+    for c in pairs(sh.accepts) do only = c; n = n + 1 end
+    if n == 1 and next(sh.rejects) then
+      t.sellCat = only
+      t.sellCatInferred = true
+      inv.note(string.format("inferred %s is '%s' — the only category %s buys.",
+        t.name or key, only, sh.name or k))
+    end
   end
   inv.save()
 end
@@ -4394,8 +4913,11 @@ function inv.onVendorRejectRaw(catRaw)
   -- tag the pending value item's type with this category
   if inv.shop and inv.shop.pendingValueKey then
     local t = inv.types[inv.shop.pendingValueKey]
-    if t and not t.sellCat then
+    -- An appraisal names item AND category unambiguously, so it is authoritative
+    -- and overrides a category the sale-inference only guessed (sellCatInferred).
+    if t and (not t.sellCat or t.sellCatInferred) then
       t.sellCat = cat
+      t.sellCatInferred = nil
       inv.note(string.format("tagged %s as category '%s'", t.name or inv.shop.pendingValueKey, cat))
       inv.save()
     end
@@ -5089,26 +5611,42 @@ function inv.moveSendNext()
   if e.src == "loose" or e.src == "keep" then
     inv.movePut(e)                                    -- already loose: one put
   else
-    local ref, hnd = inv.bagRef(e.src, e.key)          -- fetch it loose first
+    -- Bag -&gt; bag in ONE command: `get &lt;h&gt; from "&lt;src&gt;" to "&lt;dst&gt;"` (bagRef
+    -- gives the `&lt;h&gt; from "&lt;src&gt;"` part). Half the commands of get-then-put.
+    local ref, hnd = inv.bagRef(e.src, e.key)
     if not ref then
       inv.moveFail(e, "no fetch handle")
       return inv.deferStep(inv.moveSendNext)
     end
-    e.phase = "get"; e.handle = hnd
-    local cmd = "get " .. ref
+    e.phase = "get2bag"; e.handle = hnd
+    table.insert(inv.pendingPuts, { key = e.key, sackKey = e.dst })  -- resolves the dst desc
+    local cmd = string.format('get %s to "%s"', ref, inv.sackName(e.dst))
     inv.moveEcho(cmd); send(cmd, false)
-    inv.moveArmTimeout(e, "get timed out")
+    inv.moveArmTimeout(e, "move timed out")
   end
 end
 
 -- Hooked from the tail of onGetEcho: the fetched item is loose, send the put.
 function inv.moveOnGet(keys)
   local e = inv.moveInFlight
-  if not (e and e.phase == "get") then return end
+  if not e then return end
   local hit = false
   for _, k in ipairs(keys or {}) do if k == e.key then hit = true; break end end
   if not hit then return end
-  inv.movePut(e)
+  if e.phase == "get2bag" then
+    -- onGetEcho already moved it src-&gt;dst in the map; the move is done. The get
+    -- also just moved a real object with e.handle, which is the only proof that
+    -- promotes a handle to action-proven -- so a working bag handle stops being
+    -- a mere show-id candidate and shadows the ones still unproven.
+    if e.key and e.handle then inv.handleRecordOk(e.key, e.handle) end
+    inv.moveInFlight = nil
+    inv.moveClearTimer()
+    if inv.moveStats then inv.moveStats.moved = (inv.moveStats.moved or 0) + 1 end
+    inv.deferStep(inv.moveSendNext)
+  elseif e.phase == "get" then
+    if e.key and e.handle then inv.handleRecordOk(e.key, e.handle) end
+    inv.movePut(e)
+  end
 end
 
 -- Hooked from the tail of evPut: the move completed.
@@ -5121,33 +5659,111 @@ function inv.moveOnPut(key)
   inv.deferStep(inv.moveSendNext)
 end
 
+-- Hooked from onNoSuchHandle: the game refused the handle the staging mover just
+-- sent -- "You see no 'X' around here.", the SAME string a bag get returns
+-- (`get axe from "loot" to "treasure"` -&gt; "You see no 'axe' around here."). The
+-- mover otherwise only had the 8s timeout, so a bad bag handle stalled the whole
+-- staging run instead of ruling itself out and retrying. This mirrors
+-- lootHandleRefused: demote the refused handle for the type we deliberately
+-- tried to move (never the item -- the get-echo attribution rule), then re-send
+-- the move with the next candidate down the ladder, bounded by HANDLE_RETRIES.
+-- Because handleFailedAction moves the refused string to `bad`, the rebuilt
+-- fetch in moveSendNext picks a fresh handle on its own; the tries counter is
+-- the backstop for a handle that cannot be demoted (a heart's `heart`).
+function inv.moveHandleRefused(handle)
+  local e = inv.moveInFlight
+  if not e or not handle then return false end
+  if e.phase ~= "get2bag" and e.phase ~= "get" then return false end
+  -- Only claim the refusal if it names the string we actually sent; a stray
+  -- "You see no" from something else must not derail an in-flight move.
+  if not (e.handle and e.handle:lower() == handle:lower()) then return false end
+  inv.moveClearTimer()
+  inv.moveInFlight = nil
+
+  -- CASE 1 -- the handle is ACTION-PROVEN. A handle a real verb has already moved
+  -- the item with does not stop naming it, so "You see no X" means the item is
+  -- NOT in e.src: the map entry is a stale duplicate (the item was staged/sold
+  -- but a phantom copy lingered in a sale bag). Prune that phantom and move on
+  -- WITHOUT demoting -- demoting a good handle here is what destroyed the real
+  -- copy's handles in play (a scimitar/half plate sat fine in "treasure" yet
+  -- showed every handle "refused", because failed `get ... from "loot"` on the
+  -- loot phantom marked those very handles bad, then the altar could not reach
+  -- the real one either).
+  if inv.handleActProven(e.key, e.handle) then
+    if e.src and e.src ~= "loose" and e.src ~= "keep" then inv.locRemove(e.src, e.key, 1) end
+    inv.moveEcho(string.format("%s is not in \"%s\" -- pruned a stale entry (handle '%s' is fine).",
+      (inv.types[e.key] and inv.types[e.key].name) or e.key, tostring(e.src), e.handle))
+    if inv.moveStats then inv.moveStats.pruned = (inv.moveStats.pruned or 0) + 1 end
+    inv.deferStep(inv.moveSendNext)
+    return true
+  end
+
+  -- CASE 2 -- an UNPROVEN (show-id/look) candidate. It could be a bad guess OR
+  -- the item is gone; demote it and try the next candidate down the ladder,
+  -- bounded by retries.
+  if e.key then inv.handleFailedAction(e.key, e.handle, "get") end
+  e.tried = e.tried or {}
+  e.tried[e.handle] = true
+  e.tries = (e.tries or 0) + 1
+  if e.tries &lt;= inv.HANDLE_RETRIES and inv.nextHandleAfter(e.key, e.tried) then
+    -- back to the FRONT of the queue with the same src/dst, carrying the tried
+    -- set and counter so we keep descending rather than restart at the top.
+    table.insert(inv.moveQueue, 1,
+      { key = e.key, src = e.src, dst = e.dst, tried = e.tried, tries = e.tries })
+    inv.moveEcho(string.format("'%s' did not move %s -- retrying with another handle...",
+      e.handle, (inv.types[e.key] and inv.types[e.key].name) or e.key))
+    inv.deferStep(inv.moveSendNext)
+    return true
+  end
+  inv.moveFail(e, "no working handle")
+  if e.key then
+    inv.markStuck(e.key, string.format("move failed, last tried '%s'", tostring(e.handle)),
+                  inv.ambContext(e.src))
+  end
+  inv.deferStep(inv.moveSendNext)
+  return true
+end
+
 -- ---- Staging altar-bound items into the stage bag --------------------
 -- What belongs in the stage bag for a bulk sacrifice: anything the altar is the
 -- way out for (favour-only, favour-better, or still to be learned), not already
 -- there, and not one the altar has refused (noSac).
-function inv.sacStagingList()
+-- `saleBagsOnly` (ishop context): stage only what a `sell all` would otherwise
+-- sell by mistake — the sac-routed items sitting in an actual SALE bag. Loose
+-- and keep items are never bulk-sold, so moving them to treasure at a shop is
+-- pure churn (21 loose skins hauled bag-to-bag one at a time, which is what
+-- stalled and timed out); they are staged at the altar by isac instead.
+-- `shopRisk` (ishop context): stage out only the sac-routed items the CURRENT
+-- shop could actually buy -- i.e. the ones `sell all` would wrongly sell. A
+-- sac-only category (food) or a category this keeper is known to refuse is not
+-- at risk, so it stays put. That is the "only pull the weapons at a weapon
+-- shop" minimisation.
+function inv.sacStagingList(saleBagsOnly, shopRisk)
   local dst = inv.config.sacStageBag or "treasure"
   local out = {}
   for _, e in ipairs(inv.disposablesList()) do
-    if e.container ~= dst and not inv.coinInfo(e.key) then
+    local looseish = (e.container == "loose" or e.container == "keep")
+    if e.container ~= dst and not inv.coinInfo(e.key)
+       and not (saleBagsOnly and looseish) then
       local t = inv.types[e.key]
       local route = inv.disposeRoute(e.key)
       local sacOnly = t and t.sellCat and inv.config.sacOnlyCats
                       and inv.config.sacOnlyCats[t.sellCat]
       local wantsAltar = route == "sac" or (route == "unknown" and sacOnly)
-      if wantsAltar and not (t and t.noSac) then out[#out+1] = e end
+      local atRisk = (not shopRisk) or (not sacOnly and not inv.shopRejectsItem(e.key))
+      if wantsAltar and atRisk and not (t and t.noSac) then out[#out+1] = e end
     end
   end
   return out
 end
 
-function inv.stageSacItems(onDone)
+function inv.stageSacItems(onDone, saleBagsOnly, shopRisk)
   if inv.moveBusy() then
     inv.warn("a staging move is already in progress.")
     if onDone then onDone() end
     return
   end
-  local list = inv.sacStagingList()
+  local list = inv.sacStagingList(saleBagsOnly, shopRisk)
   if #list == 0 then if onDone then onDone() end; return end
   local dst = inv.config.sacStageBag or "treasure"
   inv.moveQueue = {}
@@ -5199,8 +5815,25 @@ function inv.onGetEcho(listText, toSack, fromSack)
   if inv.pendingGet and #items == 1 then
     inv.verifyGotItem(items[1].name)
   end
+  -- A staging move in flight (`get X to "bag"` or the get half of get-&gt;put)
+  -- echoes the single item we asked to move. Its echoed name can differ from
+  -- the tracked type key -- an item identified/renamed since we stored it, or
+  -- any case where the get-echo form and the stored name normalise differently
+  -- -- so inv.key(it.name) resolves to a stranger key. Attribute the move to the
+  -- key we deliberately sent (moveInFlight.key), exactly as the sac pipeline
+  -- attributes by position. Without this the item is neither removed from the
+  -- source bag nor filed in the stage bag, so it stays put and every later
+  -- ishop re-stages it -- the two-shop re-staging report. Guarded to the pure
+  -- staging case: no active shop fetch (that path needs the real echo key to
+  -- detect handle collisions).
+  local stageMoveKey = nil
+  if inv.moveInFlight and #items == 1
+     and (inv.moveInFlight.phase == "get2bag" or inv.moveInFlight.phase == "get")
+     and not (inv.shopJob and inv.shopJob.getCmd and not inv.shopJob.heldKey) then
+    stageMoveKey = inv.moveInFlight.key
+  end
   for _, it in ipairs(items) do
-    local key = inv.key(it.name)
+    local key = stageMoveKey or inv.key(it.name)
     if key then
       local ht = inv.types[key]
       if ht then ht.seen = true end
@@ -5257,6 +5890,27 @@ function inv.onGetEcho(listText, toSack, fromSack)
       end
       for _=1, it.qty do
         if toSack then
+          -- A one-command bag-&gt;bag get ("...from a leather sack to a huge
+          -- sack") carries BOTH a from and a to; remove it from the source
+          -- before adding to the destination, or the map double-counts. The
+          -- echo's `from a X` capture is polluted by the trailing `to a Y`, so
+          -- trust the in-flight move's known source when there is one.
+          if fromSack and not inv.isCorpseText(fromSack) then
+            local fk
+            if inv.moveInFlight and inv.moveInFlight.key == key then
+              fk = inv.moveInFlight.src
+            else
+              fk = inv.sackKeyFromText(fromSack)
+              if not inv.contMeta[fk] then
+                for cont in pairs(inv.loc) do
+                  if cont ~= "loose" and cont ~= "keep" and inv.locCount(cont, key) &gt; 0 then
+                    fk = cont; break
+                  end
+                end
+              end
+            end
+            if fk and fk ~= "loose" and fk ~= "keep" then inv.locRemove(fk, key, 1) end
+          end
           local descKey = inv.sackKeyFromText(toSack)
           local sackKey = inv.resolveSackText(toSack)
           -- The echo names the sack by description, never by the name you gave
@@ -5316,7 +5970,9 @@ function inv.onGetEcho(listText, toSack, fromSack)
   -- staging mover: the fetched item is now loose, so its put can go out
   if inv.moveInFlight then
     local ks = {}
-    for _, it in ipairs(items) do local k = inv.key(it.name); if k then ks[#ks+1] = k end end
+    for _, it in ipairs(items) do
+      local k = stageMoveKey or inv.key(it.name); if k then ks[#ks+1] = k end
+    end
     inv.moveOnGet(ks)
   end
 end
@@ -5512,6 +6168,16 @@ function inv.shortestRoomHandle(name, tried)
   end
 
   local confirmed = inv.handleList(key)
+  -- Prefer the game's own show-id ground pick: it is unambiguous on this floor by
+  -- construction (it lists "cloth cloak" over the shared "cloak"), which also
+  -- keeps a generic alias out of the map that an inventory verb could later
+  -- misfire on once the item is in the pack.
+  local sid = inv.types[key] and inv.types[key].showIdHandle
+  if sid and not tried[sid] and not inv.handleIsBad(key, sid)
+     and not groundBlocked(sid) and not clashes(sid) then
+    if sid:find(",") then return commaFix(sid) end
+    for _, c in ipairs(confirmed) do if c == sid then return sid end end
+  end
   for i = #confirmed, 1, -1 do                -- shortest proven first
     local c = confirmed[i]
     if not tried[c] then
@@ -6351,6 +7017,10 @@ function inv.roomScanEnd()
       end
     elseif inv.config.excludes[key] then skip("excluded", it.name)
     elseif inv.config.nonItems[key] then skip("learned non-item", it.name)
+    -- A type we already know is a corpse is never looted -- it is dug (below).
+    -- First-encounter corpses are not flagged yet; they are dropped from `wanted`
+    -- after show id reveals them, in the roomScanEnd callback.
+    elseif inv.types[key] and inv.types[key].corpse then skip("corpse (will dig)", it.name)
     elseif inv.tooHeavyNow(key) then skip(inv.tooHeavyNow(key), it.name)
     else
       local disp, metric = inv.classify(key)
@@ -6469,28 +7139,93 @@ function inv.roomScanEnd()
     return
   end
 
-  -- Probe before touching anything: `look` reaches items on the ground, so a
-  -- handle proven here makes the following `get` deterministic instead of a
-  -- guess. Only unprobed types cost anything, and only once each.
-  local toProbe = {}
-  if inv.config.probeAuto and inv.config.probeRoom then
-    local seenKey = {}
-    for _, w in ipairs(wanted) do
-      if not seenKey[w.key] and not inv.coinInfo(w.key) then
-        seenKey[w.key] = true
-        inv.getType(w.key, w.name)              -- ensure the type row exists
-        if not inv.handleProbed(w.key) then toProbe[#toProbe+1] = w.key end
+  -- ensure every wanted type has a row before we ask about handles
+  for _, w in ipairs(wanted) do
+    if not inv.coinInfo(w.key) then inv.getType(w.key, w.name) end
+  end
+
+  -- Handle discovery. `show id ground` is the game's own parser oracle: one
+  -- command gives the exact handle for every ground object, so it replaces the
+  -- look-probe ladder for room items. Anything it does not cover (a type we do
+  -- not yet track, or a handle it omits) still falls back to the probe.
+  local function probeThenTake()
+    local toProbe, seenKey = {}, {}
+    if inv.config.probeAuto and inv.config.probeRoom then
+      for _, w in ipairs(wanted) do
+        if not seenKey[w.key] and not inv.coinInfo(w.key)
+           and not inv.handleKnown(w.key) and not inv.handleProbed(w.key) then
+          seenKey[w.key] = true; toProbe[#toProbe+1] = w.key
+        end
       end
     end
+    if #toProbe &gt; 0 then
+      inv.lootSay(string.format("learning handles for %d type(s)...", #toProbe))
+      inv.probeQueue = toProbe
+      inv.probeQueueRun(function() inv.lootTake(wanted, skipped) end,
+                        { source = "room", max = inv.config.probeRoomMax })
+    else
+      inv.lootTake(wanted, skipped)
+    end
   end
-  if #toProbe &gt; 0 then
-    inv.lootSay(string.format("learning handles for %d new type(s)...", #toProbe))
-    inv.probeQueue = toProbe
-    inv.probeQueueRun(function() inv.lootTake(wanted, skipped) end,
-                      { source = "room", max = inv.config.probeRoomMax })
+
+  -- Every distinct room item type (trash included) — for full-handle
+  -- registration below. Ensure a row exists so show id can adopt its handle.
+  local roomItemKeys, seenRK = {}, {}
+  for _, it in ipairs(inv.roomScan.lines or {}) do
+    local k = inv.key(it.name)
+    if k and not seenRK[k] and not inv.coinInfo(k) then
+      seenRK[k] = true; roomItemKeys[#roomItemKeys+1] = k
+      inv.getType(k, it.name)
+    end
+  end
+
+  if inv.config.useShowId then
+    inv.showIdRun("ground", function(s)
+      -- Corpses are never looted; they are dug (which SPILLS their contents onto
+      -- the floor) and the spill re-looted. Detection has TWO signals and the
+      -- second only arrives after full registration, so the dig decision waits
+      -- for it: (1) the ground handle `corpse`/`corpse N` (s.corpses, set during
+      -- the ground scan); (2) a body-part-named corpse ("cadaver"/"yolk") whose
+      -- `show id &lt;item&gt;` Names list carries "corpse" -- idNamesLine flags the
+      -- type (t.corpse) during idFullRun below. So run the full registration
+      -- FIRST, then decide.
+      inv.idFullRun(roomItemKeys, function()
+        local corpseKeys = {}
+        for k in pairs((s and s.corpses) or {}) do corpseKeys[k] = true end
+        for _, k in ipairs(roomItemKeys) do
+          if inv.types[k] and inv.types[k].corpse then corpseKeys[k] = true end
+        end
+        local anyCorpse = next(corpseKeys) ~= nil
+        if anyCorpse and inv.config.digCorpses and not inv.loot.skipDigOnce then
+          return inv.lootDigThenReloot()
+        end
+        inv.loot.skipDigOnce = nil
+        -- digCorpses off, or a dig already failed: drop corpses from the take
+        -- list so we never `get corpse` (which just fills a bag).
+        if anyCorpse then
+          local kept = {}
+          for _, w in ipairs(wanted) do if not corpseKeys[w.key] then kept[#kept+1] = w end end
+          wanted = kept
+        end
+        probeThenTake()
+      end)
+    end)
   else
-    inv.lootTake(wanted, skipped)
+    probeThenTake()
   end
+end
+
+-- Corpses present: dig the grave (spills their contents), then re-loot. Reuses
+-- the icorpse grave machinery -- the "Grave dug" trigger calls corpseGraveDug,
+-- which re-runs iloot on the spill.
+function inv.lootDigThenReloot()
+  inv.loot.active = false
+  inv.loot.skipDigOnce = true    -- the coming re-loot must not dig again
+  inv.lootSay("corpses here — digging the grave, then looting the spill...")
+  inv.corpseGrave = { loot = true }
+  local dig = inv.config.corpseDig or "dig grave"
+  inv.lootEcho(dig); send(dig, false)
+  inv.corpseGrave.timer = tempTimer(4, function() inv.corpseGraveDug(true) end)
 end
 
 -- Issue the pickups for an already-classified room list.
@@ -6964,6 +7699,12 @@ function inv.onNoSuchHandle(handle)
   -- ("cerbie's skin") — the exact shape that left the bad handle in place.
   if inv.loot.active and inv.lootHandleRefused(h) then return end
 
+  -- A staging move owns the string it just sent, the same way: it knows the
+  -- type, demotes the refused bag handle and re-sends down the ladder. Comes
+  -- before the world-guesswork below because a bagged type's handle can be a
+  -- word its display name never contains, so the loose/room scan cannot find it.
+  if inv.moveInFlight and inv.moveHandleRefused(h) then return end
+
   -- otherwise: whichever tracked type this handle was meant for, the handle
   -- does not name it. Demote it rather than blaming the item.
   local hit
@@ -7100,19 +7841,25 @@ end
 -- A shop cycle is get/value/put, all addressed by handle. Sending an unproven
 -- handle burns the whole cycle, so learn them first — bagged items can be
 -- probed in place with `l &lt;handle&gt; in "&lt;bag&gt;"`.
+-- `show id inventory` gives the exact handle for every LOOSE item in one
+-- command, so the look-probe ladder only has to cover BAGGED items (which show
+-- id cannot reach). Bag contents are still tracked by get/put echoes.
 function inv.ishopProbe(arg)
-  if not inv.config.probeAuto then return inv.ishopGo(arg) end
-  local q, seen = {}, {}
-  for _, e in ipairs(inv.disposablesList()) do
-    if e.key and not seen[e.key] and not inv.coinInfo(e.key)
-       and not inv.handleProbed(e.key) then
-      seen[e.key] = true; q[#q+1] = e.key
+  local function afterId()
+    if not inv.config.probeAuto then return inv.ishopGo(arg) end
+    local q, seen = {}, {}
+    for _, e in ipairs(inv.disposablesList()) do
+      if e.key and not seen[e.key] and not inv.coinInfo(e.key)
+         and not inv.handleKnown(e.key) and not inv.handleProbed(e.key) then
+        seen[e.key] = true; q[#q+1] = e.key
+      end
     end
+    if #q == 0 then return inv.ishopGo(arg) end
+    inv.probeQueue = q
+    inv.shopSay(string.format("learning handles for %d bagged type(s)...", #q))
+    inv.probeQueueRun(function() inv.ishopGo(arg) end)
   end
-  if #q == 0 then return inv.ishopGo(arg) end
-  inv.probeQueue = q
-  inv.shopSay(string.format("learning handles for %d type(s) before appraising...", #q))
-  inv.probeQueueRun(function() inv.ishopGo(arg) end)
+  if inv.config.useShowId then inv.showIdRun("inventory", afterId) else afterId() end
 end
 
 -- Runs once every disposal sack's contents have been verified this session.
@@ -7254,7 +8001,11 @@ end
 -- case) and shopValueDone (post-appraisal case).
 function inv.shopBulkPhase()
   if not inv.config.bulkSell then return end
-  inv.stageSacItems(function() inv.bulkSellRun() end)
+  -- saleBagsOnly: at a shop we only clear the SALE bags. shopRisk: and only the
+  -- sac items this keeper could actually buy — food/hearts and refused
+  -- categories the vendor won't touch anyway, so they stay put. Loose/keep sac
+  -- items are staged at the altar by isac.
+  inv.stageSacItems(function() inv.bulkSellRun() end, true, true)
 end
 
 -- Fire `sell all from "&lt;bag&gt;"` for each non-empty sale bag, one bag at a time.
@@ -8085,18 +8836,21 @@ end
 -- Same reasoning as ishop: a sacrifice is addressed by handle and consumes
 -- the item, so an unproven handle is the most expensive kind of mistake.
 function inv.isacProbe()
-  if not inv.config.probeAuto then return inv.isacGo() end
-  local q, seen = {}, {}
-  for _, e in ipairs(inv.disposablesList()) do
-    if e.key and not seen[e.key] and not inv.coinInfo(e.key)
-       and not inv.handleProbed(e.key) then
-      seen[e.key] = true; q[#q+1] = e.key
+  local function afterId()
+    if not inv.config.probeAuto then return inv.isacGo() end
+    local q, seen = {}, {}
+    for _, e in ipairs(inv.disposablesList()) do
+      if e.key and not seen[e.key] and not inv.coinInfo(e.key)
+         and not inv.handleKnown(e.key) and not inv.handleProbed(e.key) then
+        seen[e.key] = true; q[#q+1] = e.key
+      end
     end
+    if #q == 0 then return inv.isacGo() end
+    inv.probeQueue = q
+    cecho(string.format("\n&lt;grey&gt;[isac]&lt;reset&gt; learning handles for %d bagged type(s)...\n", #q))
+    inv.probeQueueRun(function() inv.isacGo() end)
   end
-  if #q == 0 then return inv.isacGo() end
-  inv.probeQueue = q
-  cecho(string.format("\n&lt;grey&gt;[isac]&lt;reset&gt; learning handles for %d type(s) first...\n", #q))
-  inv.probeQueueRun(function() inv.isacGo() end)
+  if inv.config.useShowId then inv.showIdRun("inventory", afterId) else afterId() end
 end
 
 function inv.isacGo()
@@ -8119,6 +8873,26 @@ function inv.isacDispose()
   inv.pendingDrops = {}
   local dst = inv.config.sacStageBag or "treasure"
   local estN = inv.config.estN or 3
+
+  -- Sacrifice the STAGE BAG first. disposablesList scans loose then the sacks,
+  -- so stale phantom sac-entries in loose/loot (items long gone but never
+  -- pruned -- the persistent "N await altar" count) were queued ahead of the
+  -- items just staged into treasure this run. Three phantom "There was nothing
+  -- to sacrifice" replies in a row then tripped the stale-map guard and dropped
+  -- the rest of the queue -- stranding the real, freshly-staged items in the
+  -- stage bag unsacrificed. Ordering the stage bag first means the known-present
+  -- items are consumed before any phantom can trip the guard; the guard then
+  -- only ever discards the trailing phantoms, which is what it is for.
+  do
+    local rank = function(c) return (c == dst) and 0 or (c == "loose" and 2 or 1) end
+    for i, e in ipairs(list) do e._i = i end          -- stable tiebreaker
+    table.sort(list, function(a, b)
+      local ra, rb = rank(a.container), rank(b.container)
+      if ra ~= rb then return ra &lt; rb end
+      return a._i &lt; b._i
+    end)
+    for _, e in ipairs(list) do e._i = nil end
+  end
 
   -- First pass: collect drops (needed either way) and test bulk eligibility.
   local canBulk, anySac = (inv.config.bulkSac and not inv.sacLearnMode), false
