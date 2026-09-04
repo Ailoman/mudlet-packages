@@ -1,6 +1,8 @@
-# Built packages
+# Built packages (but dist/ is CI-generated output Ailo Updater serves to
+# Mudlet clients over raw.githubusercontent.com -- that one is tracked)
 *.mpackage
 *.zip
+!dist/*.mpackage
 
 # Mudlet runtime data
 *.map.dat

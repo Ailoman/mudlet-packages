@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+	<TriggerPackage/>
+	<TimerPackage/>
+	<AliasPackage>
+		<AliasGroup isActive="yes" isFolder="yes">
+			<name>Ailo Updater</name>
+			<script/>
+			<command/>
+			<packageName>Ailo Updater</packageName>
+			<regex/>
+			<Alias isActive="yes" isFolder="no">
+				<name>Force update check</name>
+				<script>ailoupdate.check(false)</script>
+				<command/>
+				<packageName>Ailo Updater</packageName>
+				<regex>^aupdate$</regex>
+			</Alias>
+		</AliasGroup>
+	</AliasPackage>
+	<ActionPackage/>
+	<ScriptPackage>
+		<ScriptGroup isActive="yes" isFolder="yes">
+			<name>Ailo Updater</name>
+			<packageName>Ailo Updater</packageName>
+			<script/>
+			<eventHandlerList/>
+			<ScriptGroup isActive="yes" isFolder="yes">
+				<name>Ailo Updater</name>
+				<packageName>Ailo Updater</packageName>
+				<script/>
+				<eventHandlerList/>
+				<Script isActive="yes" isFolder="no">
+					<name>ailoupdate.core</name>
+					<packageName>Ailo Updater</packageName>
+					<script>-- Ailo Updater ------------------------------------------------------------
+-- Checks github.com/Ailoman/mudlet-packages on every game connect (and
+-- every 6 hours while connected) and silently installs newer versions of
+-- any package listed in packages/manifest.lua -- the same self-update
+-- pattern the official Icesus core package uses against its own repo.
+--
+-- Never touches Icesus's own files, and never touches any package not
+-- listed in this repo's manifest.lua, so it can't clobber anything else
+-- installed in the profile.
+--
+-- Commands: aupdate  -- force a check right now (not silent).
+-- Files in profile dir: AiloUpdater.state.lua (last-installed versions),
+--   AiloUpdater.manifest.lua / AiloUpdater.&lt;pkg&gt;.mpackage (scratch downloads).
+-----------------------------------------------------------------------------
+
+ailoupdate = ailoupdate or {}
+ailoupdate.repo = ailoupdate.repo or &quot;https://raw.githubusercontent.com/Ailoman/mudlet-packages/master/&quot;
+ailoupdate.manifestUrl = ailoupdate.repo .. &quot;packages/manifest.lua&quot;
+ailoupdate.manifestPath = getMudletHomeDir() .. &quot;/AiloUpdater.manifest.lua&quot;
+ailoupdate.statePath = getMudletHomeDir() .. &quot;/AiloUpdater.state.lua&quot;
+ailoupdate.pending = ailoupdate.pending or {}   -- localPath -&gt; manifest entry
+ailoupdate.checking = false
+
+function ailoupdate.echo(msg)
+  cecho(string.format(&quot;\n&lt;sea_green&gt;[ailo-updater]&lt;reset&gt; %s\n&quot;, tostring(msg)))
+end
+
+local function urlEncodePath(p)
+  return (p:gsub(&quot; &quot;, &quot;%%20&quot;))
+end
+
+local function loadState()
+  local t = {}
+  if io.exists and table.load and io.exists(ailoupdate.statePath) then
+    local ok = pcall(table.load, ailoupdate.statePath, t)
+    if not ok then t = {} end
+  end
+  return t
+end
+
+local function saveState(t)
+  if table.save then pcall(table.save, ailoupdate.statePath, t) end
+end
+
+local function readManifest()
+  local f, ferr = io.open(ailoupdate.manifestPath, &quot;r&quot;)
+  if not f then return nil, ferr end
+  local content = f:read(&quot;*a&quot;)
+  f:close()
+  local loader = load or loadstring
+  local chunk, err = loader(content, &quot;ailoupdate-manifest&quot;)
+  if not chunk then return nil, err end
+  local ok, result = pcall(chunk)
+  if not ok then return nil, result end
+  if type(result) ~= &quot;table&quot; then return nil, &quot;manifest did not return a table&quot; end
+  return result
+end
+
+-- Kick off (or re-kick) a manifest check. silent=true suppresses the
+-- &quot;checking...&quot; line but a real update found is always announced.
+function ailoupdate.check(silent)
+  if ailoupdate.checking then return end
+  ailoupdate.checking = true
+  ailoupdate.pending = {}
+  if not silent then ailoupdate.echo(&quot;checking for package updates...&quot;) end
+  downloadFile(ailoupdate.manifestPath, ailoupdate.manifestUrl)
+end
+
+function ailoupdate.onManifest()
+  ailoupdate.checking = false
+  local manifest, err = readManifest()
+  if not manifest then
+    ailoupdate.echo(&quot;could not read package manifest: &quot; .. tostring(err))
+    return
+  end
+
+  local state = loadState()
+  local outdated = {}
+  for _, entry in ipairs(manifest) do
+    if state[entry.name] ~= entry.version then
+      table.insert(outdated, entry)
+    end
+  end
+  if #outdated == 0 then return end   -- quiet when everything's current
+
+  for _, entry in ipairs(outdated) do
+    local localPath = getMudletHomeDir() .. &quot;/AiloUpdater.&quot; .. entry.folder .. &quot;.mpackage&quot;
+    ailoupdate.pending[localPath] = entry
+    ailoupdate.echo(string.format(
+      &quot;update available: %s (%s -&gt; %s). downloading...&quot;,
+      entry.name, tostring(state[entry.name] or &quot;not installed&quot;), entry.version))
+    downloadFile(localPath, ailoupdate.repo .. urlEncodePath(entry.file))
+  end
+end
+
+function ailoupdate.onPackageDownloaded(path)
+  local entry = ailoupdate.pending[path]
+  if not entry then return end
+  ailoupdate.pending[path] = nil
+
+  local ok, err = pcall(installPackage, path, entry.name)
+  if ok then
+    local state = loadState()
+    state[entry.name] = entry.version
+    saveState(state)
+    ailoupdate.echo(string.format(&quot;%s installed (v%s).&quot;, entry.name, entry.version))
+  else
+    ailoupdate.echo(string.format(&quot;failed to install %s: %s&quot;, entry.name, tostring(err)))
+  end
+end
+
+function ailoupdate.eventHandler(event, ...)
+  local a = {...}
+  if event == &quot;sysDownloadDone&quot; then
+    local path = a[1]
+    if path == ailoupdate.manifestPath then
+      ailoupdate.onManifest()
+    elseif ailoupdate.pending[path] then
+      ailoupdate.onPackageDownloaded(path)
+    end
+  elseif event == &quot;sysDownloadError&quot; then
+    -- sysDownloadError args: (errorMessage, path, ...)
+    local path = a[2]
+    if path == ailoupdate.manifestPath then
+      ailoupdate.checking = false
+      ailoupdate.echo(&quot;could not reach GitHub to check for updates (&quot; .. tostring(a[1]) .. &quot;).&quot;)
+    elseif ailoupdate.pending[path] then
+      local entry = ailoupdate.pending[path]
+      ailoupdate.pending[path] = nil
+      ailoupdate.echo(string.format(&quot;failed to download %s: %s&quot;, entry.name, tostring(a[1])))
+    end
+  end
+end
+
+function ailoupdate.onConnect()
+  -- Small delay so this doesn't compete with GMCP/mapper init right at
+  -- connect, mirroring the timing Icesus's own updater uses.
+  tempTimer(3, function() ailoupdate.check(true) end)
+end
+
+-- Named handlers/timers auto-replace on re-registration (package reload),
+-- so no manual kill-then-register dance is needed here.
+registerNamedEventHandler(&quot;ailoupdate&quot;, &quot;download-done&quot;, &quot;sysDownloadDone&quot;, &quot;ailoupdate.eventHandler&quot;)
+registerNamedEventHandler(&quot;ailoupdate&quot;, &quot;download-error&quot;, &quot;sysDownloadError&quot;, &quot;ailoupdate.eventHandler&quot;)
+registerNamedEventHandler(&quot;ailoupdate&quot;, &quot;connect&quot;, &quot;sysConnectionEvent&quot;, &quot;ailoupdate.onConnect&quot;)
+registerNamedTimer(&quot;ailoupdate&quot;, &quot;periodic check&quot;, 6 * 60 * 60, function() ailoupdate.check(true) end, true)
+</script>
+					<eventHandlerList/>
+				</Script>
+			</ScriptGroup>
+		</ScriptGroup>
+	</ScriptPackage>
+	<KeyPackage/>
+</MudletPackage>
