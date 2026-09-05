@@ -725,12 +725,16 @@ if C.groupMode == nil then C.groupMode = false end
 -- no shop value and are only useful for sacrifice.
 C.sacOnlyCats = C.sacOnlyCats or { food = true }
 
--- Bulk disposal (9.10). Two optimisations over the one-command-per-item paths,
--- each safe only in a specific condition, with the per-item path as fallback:
---   * bulkSell: once every item in a sale bag is decided, empty the bag with a
---     single `sell all from "&lt;bag&gt;"`. Safe because each sold line still names
+-- Bulk disposal (9.10, loose inventory joined 9.28). Two optimisations over
+-- the one-command-per-item paths, each safe only in a specific condition,
+-- with the per-item path as fallback:
+--   * bulkSell: once every item in a sale bag -- or in loose inventory -- is
+--     decided, empty it with one command: `sell all from "&lt;bag&gt;"` for a named
+--     sack, bare `sell all` for loose. Safe because each sold line still names
 --     and prices the item, so price/vendor learning is unharmed; the sac-routed
 --     items are moved out to the stage bag first so the vendor cannot buy them.
+--     Loose items on Icesus' own keeplist are never at risk from `sell all`
+--     either way -- the game itself refuses to sell (or sacrifice) them.
 --   * bulkSac: empty the stage bag with one `sacrifice all from "&lt;bag&gt;"`. Only
 --     fired when EVERY altar-bound item in it is established (favour n &gt;= estN),
 --     because `sacrifice all` returns one lump favour that cannot be attributed
@@ -5728,23 +5732,23 @@ end
 -- What belongs in the stage bag for a bulk sacrifice: anything the altar is the
 -- way out for (favour-only, favour-better, or still to be learned), not already
 -- there, and not one the altar has refused (noSac).
--- `saleBagsOnly` (ishop context): stage only what a `sell all` would otherwise
--- sell by mistake — the sac-routed items sitting in an actual SALE bag. Loose
--- and keep items are never bulk-sold, so moving them to treasure at a shop is
--- pure churn (21 loose skins hauled bag-to-bag one at a time, which is what
--- stalled and timed out); they are staged at the altar by isac instead.
 -- `shopRisk` (ishop context): stage out only the sac-routed items the CURRENT
--- shop could actually buy -- i.e. the ones `sell all` would wrongly sell. A
--- sac-only category (food) or a category this keeper is known to refuse is not
--- at risk, so it stays put. That is the "only pull the weapons at a weapon
--- shop" minimisation.
-function inv.sacStagingList(saleBagsOnly, shopRisk)
+-- shop could actually buy -- i.e. the ones `sell all` (bagged or loose) would
+-- wrongly sell. A sac-only category (food) or a category this keeper is known
+-- to refuse is not at risk, so it stays put. That is the "only pull the
+-- weapons at a weapon shop" minimisation.
+-- Loose inventory is staged exactly like a named bag now that `ishop`
+-- bulk-sells it too (bare `sell all`, see bulkSellRun) -- moving a loose
+-- sac-bound item into the stage bag before that command runs is what keeps
+-- the vendor from buying it. "keep" items never reach this function at all:
+-- disposablesList() only scans "loose" and the disposal sacks, and Icesus'
+-- own keeplist refuses to sell or sacrifice anything on it regardless, so
+-- there was never a `saleBagsOnly`-style exemption needed for them.
+function inv.sacStagingList(shopRisk)
   local dst = inv.config.sacStageBag or "treasure"
   local out = {}
   for _, e in ipairs(inv.disposablesList()) do
-    local looseish = (e.container == "loose" or e.container == "keep")
-    if e.container ~= dst and not inv.coinInfo(e.key)
-       and not (saleBagsOnly and looseish) then
+    if e.container ~= dst and not inv.coinInfo(e.key) then
       local t = inv.types[e.key]
       local route = inv.disposeRoute(e.key)
       local sacOnly = t and t.sellCat and inv.config.sacOnlyCats
@@ -5757,13 +5761,13 @@ function inv.sacStagingList(saleBagsOnly, shopRisk)
   return out
 end
 
-function inv.stageSacItems(onDone, saleBagsOnly, shopRisk)
+function inv.stageSacItems(onDone, shopRisk)
   if inv.moveBusy() then
     inv.warn("a staging move is already in progress.")
     if onDone then onDone() end
     return
   end
-  local list = inv.sacStagingList(saleBagsOnly, shopRisk)
+  local list = inv.sacStagingList(shopRisk)
   if #list == 0 then if onDone then onDone() end; return end
   local dst = inv.config.sacStageBag or "treasure"
   inv.moveQueue = {}
@@ -7946,11 +7950,14 @@ function inv.ishopGo(arg)
       -- early and prices landed on whichever item was in flight by then.
       if inv.shopRejectsItem(e.key) then
         skipped = skipped + 1
-      elseif inv.config.bulkSell and e.container ~= "loose" and e.container ~= "keep" then
-        -- Bulk sale: leave it in the bag and empty the whole bag with one
-        -- `sell all from "&lt;bag&gt;"` after appraisals finish. Each sold line still
+      elseif inv.config.bulkSell and e.container ~= "keep" then
+        -- Bulk sale: leave it where it is and empty that whole source in one
+        -- shot once appraisals finish -- `sell all from "&lt;bag&gt;"` for a named
+        -- sack, or a bare `sell all` for loose inventory. Each sold line still
         -- names and prices the item, so nothing is lost; the sac-routed items
-        -- are staged out of the sale bags first so the vendor cannot buy them.
+        -- are staged out of the sale bags/loose inventory first so the vendor
+        -- cannot buy them. ("keep" never actually reaches here -- disposablesList()
+        -- doesn't scan it -- this guard is just belt-and-braces.)
         sold = sold + (e.count or 1)
       elseif not inv.shopRejectsItem(e.key) then
         local ref, hnd = inv.bagRef(e.container, e.key)
@@ -7996,19 +8003,21 @@ function inv.ishopGo(arg)
   end
 end
 
--- Stage sac-routed items out of the sale bags, then empty each remaining sale
--- bag with a single `sell all from "&lt;bag&gt;"`. Shared by ishopGo (no-appraisal
+-- Stage sac-routed items out of loose inventory and the sale bags, then empty
+-- each remaining source in one shot -- `sell all from "&lt;bag&gt;"` per sack, and a
+-- bare `sell all` for whatever is left loose. Shared by ishopGo (no-appraisal
 -- case) and shopValueDone (post-appraisal case).
 function inv.shopBulkPhase()
   if not inv.config.bulkSell then return end
-  -- saleBagsOnly: at a shop we only clear the SALE bags. shopRisk: and only the
-  -- sac items this keeper could actually buy — food/hearts and refused
-  -- categories the vendor won't touch anyway, so they stay put. Loose/keep sac
-  -- items are staged at the altar by isac.
-  inv.stageSacItems(function() inv.bulkSellRun() end, true, true)
+  -- shopRisk: only stage the sac items this keeper could actually buy --
+  -- food/hearts and refused categories the vendor won't touch anyway, so they
+  -- stay put (left for isac). Icesus' own keeplist keeps "keep" items safe
+  -- from the bare `sell all` regardless, so nothing special is done for them.
+  inv.stageSacItems(function() inv.bulkSellRun() end, true)
 end
 
--- Fire `sell all from "&lt;bag&gt;"` for each non-empty sale bag, one bag at a time.
+-- Fire `sell all from "&lt;bag&gt;"` for each non-empty sale bag, and a bare
+-- `sell all` for loose inventory, one source at a time.
 inv.bulkSellPending = nil
 inv.bulkSellActive  = nil
 inv.bulkSellTimer   = nil
@@ -8016,6 +8025,7 @@ inv.bulkSellTimer   = nil
 function inv.bulkSellRun()
   local dst = inv.config.sacStageBag or "treasure"
   local bags = {}
+  if #(inv.loc["loose"] or {}) &gt; 0 then bags[#bags+1] = "loose" end
   for sack in pairs(inv.config.disposalSacks or {}) do
     if sack ~= dst and #(inv.loc[sack] or {}) &gt; 0 then bags[#bags+1] = sack end
   end
@@ -8033,7 +8043,10 @@ function inv.bulkSellStep()
     return
   end
   inv.bulkSellActive = sack
-  local cmd = string.format('sell all from "%s"', inv.sackName(sack))
+  -- "loose" is a pseudo-container (see the top-of-file note) -- there is no
+  -- bag to name it from, so the bare form is correct here rather than a typo.
+  local cmd = (sack == "loose") and "sell all"
+              or string.format('sell all from "%s"', inv.sackName(sack))
   inv.shopEcho(cmd); send(cmd, false)
   -- The per-item "You sell X for N silver." lines record price + prune the map
   -- via the existing Sold trigger; the total line advances us. Backstop in case

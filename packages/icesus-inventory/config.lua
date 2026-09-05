@@ -3,6 +3,30 @@ author = [[built with Claude]]
 description = [[Instance-aware inventory tracker, disposal advisor, inline annotator,
 and mob-safe auto-loot with shop/altar disposal for Icesus.
 
+### ishop bulk-sells loose inventory too, via a bare `sell all` (9.32)
+9.15 had ishop stage only the sale bags before a bulk sell, deliberately
+leaving loose (and keep) items alone -- loose was never bulk-sold, so hauling
+loose sac-bound items to treasure was pure churn, and a pack with 21 of them
+once stalled the whole run on a no-reply timeout. That was true because the
+only bulk command was `sell all from "<bag>"`, which can't reach loose
+inventory at all -- every loose sell-route item (11+ skins in one real ishop
+run) went out one `sell <handle>` at a time instead.
+
+Icesus' own keeplist already refuses to sell (or sacrifice) anything on it,
+so a bare `sell all` is safe to fire against loose inventory: it can only
+catch loose items ishop itself would have sold anyway. ishop now treats loose
+exactly like a sale bag -- `sacStagingList`/`stageSacItems` drop the
+loose/keep exemption (the `saleBagsOnly` parameter is gone; `shopRisk` alone
+now does the narrowing), and `bulkSellRun` adds "loose" to its list of
+sources, firing bare `sell all` for it instead of `sell all from "<bag>"`.
+
+This does reopen the 9.15 stall risk for loose items specifically -- if the
+altar backlog holds many loose items in a category the CURRENT shop buys,
+staging still moves them one at a time before the bulk sell fires. `shopRisk`
+narrows this to only that shop's categories (same protection bagged sac items
+already rely on), but it is not a full fix for a large single-category
+backlog. Worth revisiting if that stall recurs.
+
 ### `imv`: the game's own categorised census (minventory) -- phase 1 (9.31)
 `minventory deep weight worn` lists every carried item -- loose, in every bag
 (nested), and worn/wielded -- grouped by the GAME's category (Weapons, Armour,
@@ -1141,5 +1165,5 @@ Every command is echoed. Exclude items manually with `iloot exclude <name>`.
 Tuning: cutoffSL=100, dfToSilver=10, trashDiv=5, estN=3, probeMax=24.
 Data persists to icesus_inventory2.lua (autosave 2 min).
 ]]
-version = [[9.31]]
+version = [[9.32]]
 created = "2026-06-09T12:30:00+02:00"
