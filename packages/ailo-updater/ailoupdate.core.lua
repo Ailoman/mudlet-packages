@@ -20,6 +20,7 @@ ailoupdate.manifestPath = getMudletHomeDir() .. "/AiloUpdater.manifest.lua"
 ailoupdate.statePath = getMudletHomeDir() .. "/AiloUpdater.state.lua"
 ailoupdate.pending = ailoupdate.pending or {}   -- localPath -> manifest entry
 ailoupdate.checking = false
+ailoupdate.checkTimer = nil
 
 function ailoupdate.echo(msg)
   cecho(string.format("\n<sea_green>[ailo-updater]<reset> %s\n", tostring(msg)))
@@ -28,6 +29,21 @@ end
 local function urlEncodePath(p)
   return (p:gsub(" ", "%%20"))
 end
+
+-- `getMudletHomeDir()` returns a Windows path with backslashes
+-- ("C:\Users\...\IceTest"), but this file joins it with a literal "/" for the
+-- manifest/package paths -- so the path we HAND to downloadFile is already
+-- mixed-separator. Qt/Mudlet accept that fine for the write, but the path it
+-- HANDS BACK on sysDownloadDone/sysDownloadError comes out fully
+-- forward-slash-normalised. `path == ailoupdate.manifestPath` (and the
+-- `ailoupdate.pending[path]` lookup) then never matches on Windows: the file
+-- lands on disk correctly (confirmed -- AiloUpdater.manifest.lua showed the
+-- right, current content), but onManifest()/onPackageDownloaded() never run,
+-- `ailoupdate.checking` never clears, and AiloUpdater.state.lua never gets
+-- created -- every check after the first silently no-ops forever on the
+-- `if ailoupdate.checking then return end` guard, with no error, no message,
+-- nothing. Compare normalised copies everywhere a downloaded path is matched.
+local function normPath(p) return p and (p:gsub("\\", "/")) end
 
 local function loadState()
   local t = {}
@@ -66,9 +82,22 @@ function ailoupdate.check(silent)
   ailoupdate.pending = {}
   if not silent then ailoupdate.echo("checking for package updates...") end
   downloadFile(ailoupdate.manifestPath, ailoupdate.manifestUrl)
+  -- Backstop: if the manifest's sysDownloadDone/sysDownloadError never gets
+  -- recognised (the Windows path-mismatch above, or anything else), don't
+  -- wedge every future check behind a `checking` flag that can now never
+  -- clear -- that failure mode is exactly what silently broke every aupdate
+  -- after the very first one. 20s is generous for a ~1.4KB file.
+  if ailoupdate.checkTimer then killTimer(ailoupdate.checkTimer) end
+  ailoupdate.checkTimer = tempTimer(20, function()
+    if ailoupdate.checking then
+      ailoupdate.checking = false
+      ailoupdate.echo("manifest check timed out (no response recognised) -- try 'aupdate' again.")
+    end
+  end)
 end
 
 function ailoupdate.onManifest()
+  if ailoupdate.checkTimer then killTimer(ailoupdate.checkTimer); ailoupdate.checkTimer = nil end
   ailoupdate.checking = false
   local silent = ailoupdate.silentCheck
   local manifest, err = readManifest()
@@ -118,25 +147,41 @@ function ailoupdate.onPackageDownloaded(path)
   end
 end
 
+-- ailoupdate.pending is keyed by the exact localPath string this file built
+-- (mixed-separator on Windows); a path arriving from a download event is
+-- Qt-normalised (forward slashes). Look it up by normalised comparison rather
+-- than assuming the keys ever match textually.
+local function findPending(path)
+  local norm = normPath(path)
+  for key, entry in pairs(ailoupdate.pending) do
+    if normPath(key) == norm then return key, entry end
+  end
+  return nil, nil
+end
+
 function ailoupdate.eventHandler(event, ...)
   local a = {...}
   if event == "sysDownloadDone" then
     local path = a[1]
-    if path == ailoupdate.manifestPath then
+    if normPath(path) == normPath(ailoupdate.manifestPath) then
       ailoupdate.onManifest()
-    elseif ailoupdate.pending[path] then
-      ailoupdate.onPackageDownloaded(path)
+    else
+      local key = findPending(path)
+      if key then ailoupdate.onPackageDownloaded(key) end
     end
   elseif event == "sysDownloadError" then
     -- sysDownloadError args: (errorMessage, path, ...)
     local path = a[2]
-    if path == ailoupdate.manifestPath then
+    if normPath(path) == normPath(ailoupdate.manifestPath) then
+      if ailoupdate.checkTimer then killTimer(ailoupdate.checkTimer); ailoupdate.checkTimer = nil end
       ailoupdate.checking = false
       ailoupdate.echo("could not reach GitHub to check for updates (" .. tostring(a[1]) .. ").")
-    elseif ailoupdate.pending[path] then
-      local entry = ailoupdate.pending[path]
-      ailoupdate.pending[path] = nil
-      ailoupdate.echo(string.format("failed to download %s: %s", entry.name, tostring(a[1])))
+    else
+      local key, entry = findPending(path)
+      if key then
+        ailoupdate.pending[key] = nil
+        ailoupdate.echo(string.format("failed to download %s: %s", entry.name, tostring(a[1])))
+      end
     end
   end
 end
