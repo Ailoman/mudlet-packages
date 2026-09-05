@@ -1,4 +1,4 @@
--- Ailo Updater ------------------------------------------------------------
+﻿-- Ailo Updater ------------------------------------------------------------
 -- Checks github.com/Ailoman/mudlet-packages on every game connect (and
 -- every 6 hours while connected) and silently installs newer versions of
 -- any package listed in packages/manifest.lua -- the same self-update
@@ -63,7 +63,14 @@ local function readManifest()
   if not f then return nil, ferr end
   local content = f:read("*a")
   f:close()
-  local loader = load or loadstring
+  -- Lua 5.1's `load(f [, chunkname])` only accepts a reader FUNCTION, not a
+  -- string -- passing a string throws "bad argument #1 to 'loader' (function
+  -- expected, got string)". The string-accepting form in 5.1 is `loadstring`.
+  -- Both globals exist in Mudlet (5.1), so `load or loadstring` always picked
+  -- `load` first and always threw on every real manifest read -- this was the
+  -- actual reason `onManifest()` never completed (event handler errored out
+  -- silently to the Errors console, never reaching the version comparison).
+  local loader = loadstring or load
   local chunk, err = loader(content, "ailoupdate-manifest")
   if not chunk then return nil, err end
   local ok, result = pcall(chunk)
