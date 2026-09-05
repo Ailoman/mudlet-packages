@@ -11,6 +11,7 @@ tools/gen_manifest.py from the repo root to rebuild dist/ + manifest.lua.
 import os
 import subprocess
 import sys
+import tempfile
 import xml.dom.minidom as minidom
 import xml.etree.ElementTree as ET
 
@@ -22,7 +23,14 @@ ALIASES = [
 
 
 def build():
-    with open(LUA_SRC, encoding="utf-8") as f:
+    # utf-8-sig strips a leading UTF-8 BOM if present (e.g. from PowerShell's
+    # `Set-Content -Encoding utf8`, which -- unlike plain Python utf-8 writes
+    # -- adds one) and is a no-op otherwise. Without this, a BOM in the
+    # source file gets embedded as the first three bytes of the <script>
+    # text in the built XML, which Lua's loader does NOT treat as ignorable
+    # whitespace -- it breaks the whole script with a syntax error the
+    # moment Mudlet tries to run it.
+    with open(LUA_SRC, encoding="utf-8-sig") as f:
         lua_source = f.read()
 
     root = ET.Element("MudletPackage", version="1.001")
@@ -86,7 +94,7 @@ def build():
 
 
 def validate(xml_path):
-    # 1. Re-parse — a ParseError means something didn't escape correctly.
+    # 1. Re-parse -- a ParseError means something didn't escape correctly.
     tree = ET.parse(xml_path)
 
     # 2. luac-check every <script>/<pattern> chunk under both Lua versions
@@ -98,11 +106,19 @@ def validate(xml_path):
             sc = el.findtext("script")
             if not sc or not sc.strip():
                 continue
-            tmp = "/tmp/_ailoupdate_chunk_check.lua"
+            tmp = os.path.join(tempfile.gettempdir(), "_ailoupdate_chunk_check.lua")
             with open(tmp, "w", encoding="utf-8") as f:
                 f.write(sc)
             for luac in ("luac5.1", "luac5.4"):
-                r = subprocess.run([luac, "-p", tmp], capture_output=True, text=True)
+                try:
+                    r = subprocess.run([luac, "-p", tmp], capture_output=True, text=True)
+                except FileNotFoundError:
+                    # luac isn't installed on this machine (common on a
+                    # plain Windows setup) -- skip the syntax cross-check
+                    # rather than failing the whole build over a missing
+                    # optional tool.
+                    print(f"skip [{luac}]: not installed", file=sys.stderr)
+                    continue
                 if r.returncode:
                     ok = False
                     name = el.findtext("name")

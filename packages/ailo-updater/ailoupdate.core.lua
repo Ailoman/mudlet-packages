@@ -1,4 +1,4 @@
-﻿-- Ailo Updater ------------------------------------------------------------
+-- Ailo Updater ------------------------------------------------------------
 -- Checks github.com/Ailoman/mudlet-packages on every game connect (and
 -- every 6 hours while connected) and silently installs newer versions of
 -- any package listed in packages/manifest.lua -- the same self-update
