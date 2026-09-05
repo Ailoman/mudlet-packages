@@ -10,6 +10,10 @@ to what you'd get zipping a package folder by hand.
 packages/manifest.lua is what Ailo Updater (packages/ailo-updater) polls
 on every game connect to decide what needs installing — see that
 package's config.lua for how it's consumed.
+
+Every build also drops a permanent, never-overwritten copy at
+archive/<folder>/<version>.mpackage — see "Rolling back" in README.md for
+how to use it if a pushed version turns out to be broken.
 """
 import os
 import re
@@ -19,6 +23,7 @@ import zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PKG_DIR = os.path.join(ROOT, "packages")
 DIST_DIR = os.path.join(ROOT, "dist")
+ARCHIVE_DIR = os.path.join(ROOT, "archive")
 
 # Packages that ship with Mudlet itself / aren't part of the auto-update
 # rollout (per README's "(Mudlet default)" annotation). Still built to
@@ -59,6 +64,29 @@ def lua_str(s):
     return "'" + str(s).replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n") + "'"
 
 
+def safe_version_filename(version):
+    """Turn a config.lua version string into a safe filename component."""
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", str(version)).strip("_") or "0"
+
+
+def archive_build(folder, version, dist_path):
+    """Copy a freshly-built .mpackage into archive/<folder>/<version>.mpackage.
+
+    Never overwrites an existing archived file — a version string is only
+    ever built once (bump version in config.lua for any change you want
+    archived separately), so an existing file at that path means this exact
+    version was already archived and is left alone.
+    """
+    folder_dir = os.path.join(ARCHIVE_DIR, folder)
+    os.makedirs(folder_dir, exist_ok=True)
+    archive_path = os.path.join(folder_dir, f"{safe_version_filename(version)}.mpackage")
+    if os.path.exists(archive_path):
+        return archive_path, False
+    with open(dist_path, "rb") as src, open(archive_path, "wb") as dst:
+        dst.write(src.read())
+    return archive_path, True
+
+
 def build_package(folder):
     pkg_path = os.path.join(PKG_DIR, folder)
     config_path = os.path.join(pkg_path, "config.lua")
@@ -85,11 +113,16 @@ def build_package(folder):
             if fn in ship_names and os.path.isfile(full):
                 zf.write(full, arcname=fn)
 
+    version = cfg.get("version", "0")
+    archive_path, archived_new = archive_build(folder, version, dist_path)
+
     return {
         "name": cfg.get("mpackage", folder),
         "folder": folder,
-        "version": cfg.get("version", "0"),
+        "version": version,
         "file": f"dist/{dist_name}",
+        "archive_path": archive_path,
+        "archived_new": archived_new,
     }
 
 
@@ -114,12 +147,14 @@ def write_manifest_lua(entries):
 
 def main():
     os.makedirs(DIST_DIR, exist_ok=True)
+    os.makedirs(ARCHIVE_DIR, exist_ok=True)
     entries = []
     for folder in sorted(os.listdir(PKG_DIR)):
         built = build_package(folder)
         if built is None:
             continue
-        print(f"  built dist/{built['folder']}.mpackage  (v{built['version']})")
+        archive_note = "archived" if built["archived_new"] else "already archived"
+        print(f"  built dist/{built['folder']}.mpackage  (v{built['version']}, {archive_note})")
         if folder not in SKIP_MANIFEST:
             entries.append(built)
     out_path = write_manifest_lua(entries)

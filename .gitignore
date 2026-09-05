@@ -1,8 +1,10 @@
 # Built packages (but dist/ is CI-generated output Ailo Updater serves to
-# Mudlet clients over raw.githubusercontent.com -- that one is tracked)
+# Mudlet clients over raw.githubusercontent.com, and archive/ is the
+# permanent per-version backup used for rollbacks -- both are tracked)
 *.mpackage
 *.zip
 !dist/*.mpackage
+!archive/**/*.mpackage
 
 # Mudlet runtime data
 *.map.dat

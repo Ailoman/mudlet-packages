@@ -31,14 +31,37 @@ there's no separate release step: source lands on `master`, the build
 lands a few seconds later, and every connected client picks it up on its
 next connect (or within 6 hours).
 
+## Rolling back a bad version
+
+Every build permanently archives a copy at `archive/<folder>/<version>.mpackage`
+— nothing there is ever overwritten, so every version that's ever been pushed
+stays available. If a version turns out to be broken:
+
+1. Find the last good version, either in the `archive/<folder>/` folder or in
+   `git log -- packages/manifest.lua` (each entry there is one version bump).
+2. Install `archive/<folder>/<good-version>.mpackage` by hand in Mudlet
+   (Package Manager → Install) — this immediately reverts that one client,
+   independent of what's on `master`.
+3. To make the rollback stick for everyone (undo it in the repo too, so Ailo
+   Updater stops trying to push the broken version back out): revert the
+   offending commit(s) to that package's `packages/<folder>/` source and
+   `config.lua` `version`, push, and let CI rebuild as normal. Bumping the
+   version *backward* is fine — Ailo Updater only checks for a version
+   *mismatch*, not that it's newer.
+
+Git itself is also a full history of every source change (`git log -p --
+packages/<folder>/`), independent of the archive — the archive exists
+specifically so a `.mpackage` you can drag straight into Mudlet is always
+one click away, without reconstructing it from a past commit.
+
 ## Packages
 
 | Package | Version | Description |
 |---|---|---|
-| [ailo-updater](packages/ailo-updater/) | 1 | Self-updater — installs newer versions of every package below automatically |
+| [ailo-updater](packages/ailo-updater/) | 2 | Self-updater — installs newer versions of every package below automatically |
 | [elemental-bonds](packages/elemental-bonds/) | 2.9 | Templar elemental bond manager — track, balance, and manage buffs |
 | [icesafe-zone](packages/icesafe-zone/) | 1.1 | Auto-removes forbidden items in safe-zone areas, re-equips on exit |
-| [icesus-inventory](packages/icesus-inventory/) | — | Icesus inventory manager |
+| [icesus-inventory](packages/icesus-inventory/) | 9.31 | Icesus inventory manager |
 | [icesus-spell-aliases](packages/icesus-spell-aliases/) | 1.0 | Missing Templar spell-cast aliases (av, cb, esoe, msa, sof) |
 | [lantern-refill](packages/lantern-refill/) | 1.0 | Auto-refills iron lanterns; swaps oil sack when empty |
 | [mapper-addon](packages/mapper-addon/) | 1 | Mapper add-on for Icesus |

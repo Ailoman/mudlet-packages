@@ -57,10 +57,12 @@ local function readManifest()
 end
 
 -- Kick off (or re-kick) a manifest check. silent=true suppresses the
--- "checking..." line but a real update found is always announced.
+-- "checking..." line and the "up to date" result line, but a real update
+-- found is always announced either way.
 function ailoupdate.check(silent)
   if ailoupdate.checking then return end
   ailoupdate.checking = true
+  ailoupdate.silentCheck = silent
   ailoupdate.pending = {}
   if not silent then ailoupdate.echo("checking for package updates...") end
   downloadFile(ailoupdate.manifestPath, ailoupdate.manifestUrl)
@@ -68,6 +70,7 @@ end
 
 function ailoupdate.onManifest()
   ailoupdate.checking = false
+  local silent = ailoupdate.silentCheck
   local manifest, err = readManifest()
   if not manifest then
     ailoupdate.echo("could not read package manifest: " .. tostring(err))
@@ -81,7 +84,13 @@ function ailoupdate.onManifest()
       table.insert(outdated, entry)
     end
   end
-  if #outdated == 0 then return end   -- quiet when everything's current
+  if #outdated == 0 then
+    -- The automatic connect/6-hour checks stay quiet on a no-op (matches
+    -- Icesus core's own behavior); a manual `aupdate` gets an explicit
+    -- confirmation so it's never ambiguous with "still checking".
+    if not silent then ailoupdate.echo("everything is up to date.") end
+    return
+  end
 
   for _, entry in ipairs(outdated) do
     local localPath = getMudletHomeDir() .. "/AiloUpdater." .. entry.folder .. ".mpackage"
