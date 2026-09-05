@@ -4421,16 +4421,62 @@ inv.idOnDone = nil
 
 function inv.handleIdFull(key) local h = inv.handlesOf(key); return h and h.idFull == true end
 
+-- A query handle that CANNOT succeed is worse than no query at all: nothing
+-- recognises the reply shape it comes back with, so idSendNext's queue sits on
+-- the full 4s no-reply backstop before it can move to the next type -- one
+-- lost slot for every type still waiting behind it. Two ways a handle is
+-- doomed before it's even sent:
+--   * Room-ambiguous: more than one tracked type this pass reduces to the same
+--     head noun (a positional pick like "gloves 3" with the trailing index
+--     stripped). `show id gloves` then answers "Names recognized by the
+--     parser, matching 'gloves':" -- the SAME multi-row shape as `show id
+--     ground` itself, not a "  Names: ..." line -- so it never fires the
+--     trigger that clears idInFlight.
+--   * Worn-clashing: `show id &lt;word&gt;` searches what you're WEARING before the
+--     ground (the 9.30 finding), so a ground item whose only recorded handle
+--     is a bare noun a worn item also answers to (`inv.wornClash`) gets back
+--     the WORN item's Names line instead -- a fast, "successful"-looking
+--     reply that would silently attribute the wrong item's aliases (including
+--     any special-item tag) to this type. This one doesn't cost time, but
+--     it's wrong data, which is worse.
+-- Both are skipped rather than sent -- they get their full alias set whenever
+-- the head noun is unique and worn-clear, which most rooms are most of the
+-- time. Nothing is lost long-term: skipping doesn't set idFull, so the type is
+-- simply reconsidered next time it's seen.
 function inv.idFullRun(keys, onDone)
   inv.idQueue = {}
   if inv.config.idFull then
+    local headCount = {}
+    for _, k in ipairs(keys or {}) do
+      local h = inv.handleKnown(k)
+      if h then
+        local head = h:gsub("%s*%d+$", "")
+        headCount[head] = (headCount[head] or 0) + 1
+      end
+    end
     local seen = {}
+    local skippedAmb, skippedWorn = 0, 0
     for _, k in ipairs(keys or {}) do
       if not seen[k] and not inv.coinInfo(k) and not inv.config.nonItems[k]
          and not inv.handleIdFull(k) then
         local h = inv.handleKnown(k)   -- a handle to address `show id` with
-        if h then seen[k] = true; inv.idQueue[#inv.idQueue+1] = { key = k, handle = h } end
+        if h then
+          local head = h:gsub("%s*%d+$", "")
+          if (headCount[head] or 0) &gt; 1 then
+            skippedAmb = skippedAmb + 1
+          elseif inv.wornClash(h) then
+            skippedWorn = skippedWorn + 1
+          else
+            seen[k] = true
+            inv.idQueue[#inv.idQueue+1] = { key = k, handle = h }
+          end
+        end
       end
+    end
+    if skippedAmb &gt; 0 or skippedWorn &gt; 0 then
+      cecho(string.format(
+        "\n&lt;grey&gt;[iid]&lt;reset&gt; deferred full names for %d ambiguous, %d worn-clashing type(s).\n",
+        skippedAmb, skippedWorn))
     end
   end
   if #inv.idQueue == 0 then if onDone then onDone() end; return end

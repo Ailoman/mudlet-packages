@@ -3,6 +3,41 @@ author = [[built with Claude]]
 description = [[Instance-aware inventory tracker, disposal advisor, inline annotator,
 and mob-safe auto-loot with shop/altar disposal for Icesus.
 
+### idFullRun skips doomed `show id <item>` queries (9.33)
+A room with a lot of loot (many clothing/armour types, some sharing a head
+noun) showed `iloot` stalling for whole seconds at a time during full handle
+registration. Root cause: `show id <handle>` can fail in two ways idFullRun's
+old handle pick (plain `handleKnown`) never accounted for.
+
+(1) Room-ambiguous. When more than one tracked type this pass reduces to the
+same head noun (e.g. 4 different glove types all only known by a positional
+"gloves N" pick), `show id gloves` answers "Names recognized by the parser,
+matching 'gloves':" -- the SAME multi-row shape `show id ground` itself uses,
+not the single "  Names: a, b, c" line the reply trigger looks for. Nothing
+fires, so idSendNext's queue sits on its full 4-second no-reply backstop
+before the NEXT type can even be asked. A real run hit this twice (11 glove
+instances across 4 types, 2 shirt types) for ~8 wasted seconds out of a ~30
+second registration phase -- over a quarter of it, from 2 of 8 queries.
+
+(2) Worn-clashing. `show id <word>` searches what you're WEARING before the
+ground (the 9.30 finding). A ground item whose only recorded handle is a bare
+noun a worn item also answers to -- confirmed for "cloak" (a worn Fabled silk
+cloak) and "bracers" (worn Bracers of the raptor) in the same run -- gets back
+the WORN item's Names line instead. Fast reply, wrong data: the worn item's
+aliases (its special-item tag included) would get silently attributed to the
+ground type instead. `show id ground` is supposed to hand out a disambiguated
+pick for exactly this reason (9.30), but evidently doesn't always -- both of
+these came back as the bare noun.
+
+Fix: idFullRun now counts how many tracked types this pass share a head noun
+(a positional pick with its trailing index stripped) and checks each pick
+against `inv.wornClash` (already maintained by the 9.31 minventory census)
+before queuing it. A doomed pick is skipped rather than sent -- no idFull flag
+is set, so the type is simply reconsidered next time its handle isn't doomed,
+which is most rooms most of the time. In the run that exposed this, that's 6
+fewer commands (8 queries down to the 4 that could actually succeed: mask,
+coat, vest, leggings) and both multi-second stalls gone.
+
 ### ishop bulk-sells loose inventory too, via a bare `sell all` (9.32)
 9.15 had ishop stage only the sale bags before a bulk sell, deliberately
 leaving loose (and keep) items alone -- loose was never bulk-sold, so hauling
@@ -1165,5 +1200,5 @@ Every command is echoed. Exclude items manually with `iloot exclude <name>`.
 Tuning: cutoffSL=100, dfToSilver=10, trashDiv=5, estN=3, probeMax=24.
 Data persists to icesus_inventory2.lua (autosave 2 min).
 ]]
-version = [[9.32]]
+version = [[9.33]]
 created = "2026-06-09T12:30:00+02:00"

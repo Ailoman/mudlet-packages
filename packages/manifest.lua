@@ -4,7 +4,7 @@ return {
   { name = 'Ailo Updater', folder = 'ailo-updater', version = '2', file = 'dist/ailo-updater.mpackage' },
   { name = 'Elemental Bonds', folder = 'elemental-bonds', version = '2.9', file = 'dist/elemental-bonds.mpackage' },
   { name = 'IceSafeZone', folder = 'icesafe-zone', version = '1.1', file = 'dist/icesafe-zone.mpackage' },
-  { name = 'Icesus Inventory', folder = 'icesus-inventory', version = '9.32', file = 'dist/icesus-inventory.mpackage' },
+  { name = 'Icesus Inventory', folder = 'icesus-inventory', version = '9.33', file = 'dist/icesus-inventory.mpackage' },
   { name = 'Icesus Spell Aliases', folder = 'icesus-spell-aliases', version = '1.0', file = 'dist/icesus-spell-aliases.mpackage' },
   { name = 'Lantern Refill', folder = 'lantern-refill', version = '1.0', file = 'dist/lantern-refill.mpackage' },
   { name = 'Mapper Addon', folder = 'mapper-addon', version = '1', file = 'dist/mapper-addon.mpackage' },
